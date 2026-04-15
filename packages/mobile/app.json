@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Islamic Dashboard",
+    "slug": "islamic-dashboard",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "islamic-dashboard",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0f1b2d"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.islamicdashboard.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Islamic Dashboard uses your location to calculate accurate prayer times for your city."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1b2d"
+      },
+      "package": "com.islamicdashboard.app",
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM",
+        "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Islamic Dashboard uses your location to calculate accurate prayer times for your city."
+        }
+      ],
+      "expo-sqlite"
+    ]
+  }
+}
