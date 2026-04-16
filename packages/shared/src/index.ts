@@ -19,6 +19,7 @@ export * from './hooks/useReadingPosition';
 
 // Storage
 export type { StorageService } from './storage/types';
+export { LocalStorageAdapter } from './storage/localStorageAdapter';
 
 // Utils
 export * from './utils/theme';
