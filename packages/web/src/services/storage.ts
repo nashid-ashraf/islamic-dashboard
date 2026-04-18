@@ -1,3 +1,3 @@
-import { LocalStorageAdapter } from '@islamic-dashboard/shared';
+import { LocalStorageAdapter } from './localStorageAdapter';
 
 export const storage = new LocalStorageAdapter();

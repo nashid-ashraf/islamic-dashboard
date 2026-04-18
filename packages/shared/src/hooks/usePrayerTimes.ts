@@ -3,7 +3,7 @@ import type { DailyPrayerData, PrayerName, PrayerSettings } from '../models/pray
 import { PRAYER_NAMES, DEFAULT_PRAYER_SETTINGS } from '../models/prayer';
 import { fetchPrayerTimesByCity, fetchPrayerTimesByCoords } from '../api/aladhan';
 import { getNextPrayer, minutesUntilPrayer, formatCountdown } from '../utils/dateHelpers';
-import type { StorageService } from '../storage/types';
+import type { StorageService } from '../ports/storage';
 
 export interface PrayerTimesState {
   data: DailyPrayerData | null;

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
+import { NotificationOrchestrator } from './NotificationOrchestrator';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const QuranReader = lazy(() => import('./pages/QuranReader'));
@@ -8,8 +9,10 @@ const Reminders = lazy(() => import('./pages/Reminders'));
 function App() {
   return (
     <BrowserRouter>
+      <NotificationOrchestrator />
       <div className="app">
-        <nav className="tab-bar">
+        <a href="#main" className="skip-link">Skip to main content</a>
+        <nav className="tab-bar" aria-label="Primary">
           <NavLink to="/" end className={({ isActive }) => isActive ? 'tab active' : 'tab'}>
             Dashboard
           </NavLink>
@@ -20,8 +23,8 @@ function App() {
             Reminders
           </NavLink>
         </nav>
-        <main className="content">
-          <Suspense fallback={<div className="loading">Loading...</div>}>
+        <main id="main" className="content">
+          <Suspense fallback={<div className="loading" role="status" aria-live="polite">Loading...</div>}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/quran" element={<QuranReader />} />
