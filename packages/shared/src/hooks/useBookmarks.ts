@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Bookmark } from '../models/quran';
-import type { StorageService } from '../storage/types';
+import type { StorageService } from '../ports/storage';
 import { generateId } from '../utils/dateHelpers';
 
 export interface BookmarksState {

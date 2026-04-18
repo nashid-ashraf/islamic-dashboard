@@ -20,15 +20,86 @@ All three modules converge on a single dashboard with a shared notification syst
 
 ### System Diagram
 
-<p align="center">
-  <img src="architecture-diagram.png" alt="Architecture diagram showing the three modules converging on a unified dashboard" width="600" />
-</p>
+```mermaid
+flowchart TD
+    User([User / Browser])
+    App[Unified Dashboard App]
+
+    User --> App
+
+    subgraph Prayer[Prayer Times Module]
+        Geo[Geolocation API<br/>browser / device]
+        Aladhan[AlAdhan API<br/>aladhan.com]
+        PrayerJSON[(Prayer Timings<br/>JSON)]
+        Geo --> Aladhan --> PrayerJSON
+    end
+
+    subgraph Quran[Quran Module]
+        AlQuran[AlQuran Cloud API<br/>alquran.cloud]
+        AyahJSON[(Ayahs +<br/>Translations JSON)]
+        AlQuran --> AyahJSON
+    end
+
+    subgraph Reminders[Custom Reminders Module]
+        LS[(localStorage /<br/>SQLite)]
+        Scheduler[Notification Scheduler]
+        Queue[Notification Queue]
+        LS --> Scheduler --> Queue
+    end
+
+    App --> Prayer
+    App --> Quran
+    App --> Reminders
+
+    PrayerJSON --> Push
+    Queue --> Push
+    Push[🔔 Push Notification<br/>on device]
+
+    classDef module fill:#1e7e5a,stroke:#0f4a36,color:#fff
+    classDef api fill:#3b82f6,stroke:#1e40af,color:#fff
+    classDef store fill:#8b5cf6,stroke:#5b21b6,color:#fff
+    classDef alert fill:#f97316,stroke:#b45309,color:#fff
+    class App,Scheduler,Queue module
+    class Geo,Aladhan,AlQuran api
+    class PrayerJSON,AyahJSON,LS store
+    class Push alert
+```
 
 ### Data Flow
 
-<p align="center">
-  <img src="sequence-diagram.png" alt="Sequence diagram showing parallel API calls on app open" width="600" />
-</p>
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as Dashboard App
+    participant Geo as Geolocation API
+    participant Aladhan as AlAdhan API
+    participant AlQuran as AlQuran Cloud
+    participant LS as localStorage
+    participant Sched as Notification Scheduler
+
+    User->>App: Open app
+    par Parallel startup
+        App->>Geo: Request coordinates
+        Geo-->>App: lat, lng
+        App->>Aladhan: GET /timings (lat, lng, date)
+        Aladhan-->>App: Prayer timings + Hijri date
+    and
+        App->>AlQuran: GET /surah/:id (Arabic + translation)
+        AlQuran-->>App: Ayahs + translations
+    and
+        App->>LS: Load custom reminders
+        LS-->>App: Reminder list
+    end
+    App-->>User: Render unified dashboard
+
+    User->>App: Create reminder (Due at 14:00)
+    App->>LS: Save reminder
+    App->>Sched: Schedule push at 14:00
+    Sched-->>User: 🔔 Notification fires
+
+    User->>App: Mark reminder complete
+    App->>LS: Update status (complete=true)
+```
 
 ### Tech Stack
 
@@ -37,9 +108,10 @@ All three modules converge on a single dashboard with a shared notification syst
 | **Framework** | React Native (Expo SDK 52+) for mobile, Vite + React for web |
 | **Language** | TypeScript (strict mode) |
 | **Monorepo** | npm workspaces (upgradeable to Turborepo) |
-| **Storage** | expo-sqlite (mobile), localStorage/IndexedDB (web) — abstracted behind `StorageService` interface |
-| **Notifications** | expo-notifications (mobile), Web Push API + Service Worker (web) |
-| **Geolocation** | expo-location (mobile), navigator.geolocation (web) |
+| **Storage** | expo-sqlite (mobile), localStorage (web) — abstracted behind `StorageService` port in `shared/ports/` |
+| **Notifications** | expo-notifications (mobile), Web Notification API + setTimeout (web) — abstracted behind `NotificationScheduler` port |
+| **Geolocation** | expo-location (mobile), navigator.geolocation (web) — abstracted behind `GeolocationProvider` port |
+| **API caching** | In-memory TTL cache in `shared/api/httpClient.ts` + Workbox runtime caching via `vite-plugin-pwa` (web prod) |
 | **CI/CD** | GitHub Actions + EAS Build (mobile), Cloudflare Pages (web) |
 | **Hosting** | Cloudflare Pages (web PWA) |
 
@@ -48,22 +120,47 @@ All three modules converge on a single dashboard with a shared notification syst
 ```
 islamic-dashboard/
 ├── packages/
-│   ├── shared/              # ~80% of code — shared across all platforms
-│   │   ├── api/             # Aladhan + AlQuran Cloud API clients
-│   │   ├── models/          # TypeScript interfaces (Prayer, Surah, Ayah, Reminder)
-│   │   ├── hooks/           # React hooks (useQuran, usePrayerTimes, useReminders)
-│   │   ├── storage/         # StorageService interface + platform adapters
-│   │   └── utils/           # Date helpers, prayer time parsing, theme tokens
-│   ├── mobile/              # Expo app (iOS + Android) — ~15% of code
-│   │   ├── app/             # Expo Router screens
-│   │   ├── components/      # Native UI (SafeArea, haptics, blur)
-│   │   └── services/        # expo-notifications, expo-location
-│   └── web/                 # Vite + React PWA — ~5% of code
-│       ├── src/             # Web UI components, pages, router
-│       ├── sw/              # Workbox service worker
-│       └── public/          # PWA manifest, icons
-├── package.json             # Monorepo root
-└── tsconfig.base.json       # Shared TypeScript config
+│   ├── shared/                     # ~80% of code — shared across all platforms
+│   │   ├── api/                    # Aladhan + AlQuran Cloud API clients + httpClient (caching/timeout)
+│   │   ├── models/                 # TypeScript interfaces (Prayer, Surah, Ayah, Reminder)
+│   │   ├── hooks/                  # React hooks (useQuran, usePrayerTimes, useReminders, ...)
+│   │   ├── ports/                  # Platform-agnostic interfaces: StorageService,
+│   │   │                           #   NotificationScheduler, GeolocationProvider
+│   │   └── utils/                  # Date helpers, prayer-time parsing, theme tokens
+│   ├── mobile/                     # Expo app (iOS + Android) — Phase 4
+│   │   └── src/services/           # Port implementations: expo-sqlite / expo-notifications / expo-location
+│   └── web/                        # Vite + React PWA
+│       ├── src/
+│       │   ├── App.tsx             # Shell + <NotificationOrchestrator/>
+│       │   ├── NotificationOrchestrator.tsx   # Root-level re-hydration of scheduled notifs
+│       │   ├── pages/              # Dashboard, QuranReader, Reminders
+│       │   └── services/           # Port implementations: LocalStorageAdapter,
+│       │                           #   WebNotificationScheduler, WebGeolocationProvider
+│       └── public/                 # PWA manifest, icons
+├── package.json                    # Monorepo root (npm workspaces)
+└── tsconfig.base.json              # Shared TypeScript config
+```
+
+### Platform Boundary (Ports & Adapters)
+
+Platform-specific concerns live behind three interfaces in `packages/shared/src/ports/`. The shared package **never** imports browser or native globals — it only declares the contract. Each platform package owns its adapters:
+
+```
+┌─────────────────── packages/shared ───────────────────┐
+│ ports/storage.ts         StorageService               │
+│ ports/notifications.ts   NotificationScheduler        │
+│ ports/geolocation.ts     GeolocationProvider          │
+│ hooks/...                depend on StorageService     │
+└────────────────────────▲──────────────────────────────┘
+                         │ implements
+                         │
+      ┌──────────────────┼──────────────────┐
+      │                                     │
+┌─────┴──── packages/web ─────┐   ┌─────────┴──── packages/mobile ─────┐
+│ services/localStorageAdapter │   │ services/sqliteAdapter              │
+│ services/notifications (web) │   │ services/notifications (expo)       │
+│ services/geolocation (web)   │   │ services/geolocation (expo)         │
+└──────────────────────────────┘   └─────────────────────────────────────┘
 ```
 
 ### Code Sharing Strategy
@@ -72,12 +169,12 @@ islamic-dashboard/
 
 | Concern | Shared | Web | Mobile |
 |---------|--------|-----|--------|
-| API clients (Aladhan, AlQuran) | Direct import | — | — |
+| API clients (Aladhan, AlQuran) + httpClient cache | Direct import | — | — |
 | Data models & types | Direct import | — | — |
 | React hooks (business logic) | Direct import | — | — |
-| Storage interface | Direct import | IndexedDB adapter | SQLite adapter |
-| Notifications | Scheduler interface | Web Push API | expo-notifications |
-| Geolocation | — | navigator.geolocation | expo-location |
+| Storage | `StorageService` port | `LocalStorageAdapter` | SQLite adapter (Phase 4) |
+| Notifications | `NotificationScheduler` port | `WebNotificationScheduler` (setTimeout + Notification API) | expo-notifications (Phase 4) |
+| Geolocation | `GeolocationProvider` port | `WebGeolocationProvider` | expo-location (Phase 4) |
 | UI components | — | `<div>` + CSS | `<View>` + StyleSheet |
 | Navigation | — | React Router | Expo Router |
 | Design tokens (colors, spacing) | JS object in `shared/theme.ts` | CSS variables | StyleSheet |
@@ -206,10 +303,11 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 | Web deployment assessment | Done |
 | Android deployment assessment | Done |
 | iOS deployment assessment | Done |
-| Monorepo setup & shared package | Planned |
-| Web app (Vite + React PWA) | Planned |
-| Mobile app (Expo) | Planned |
-| CI/CD pipelines | Planned |
+| **Phase 1+2** — Monorepo scaffold & shared business logic | Done |
+| **Phase 3** — Web app (Vite + React PWA) wired to shared hooks | Done |
+| **Phase 3.1** — Accessibility pass + hexagonal ports + API caching + notification re-hydration | Done |
+| **Phase 4** — Mobile app (Expo) | Planned |
+| **Phase 5** — CI/CD pipelines | Planned |
 | Production deployment | Planned |
 
 ---

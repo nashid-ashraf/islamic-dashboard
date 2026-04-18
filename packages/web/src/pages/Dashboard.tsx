@@ -7,56 +7,29 @@ import {
   PRAYER_NAMES,
   formatHijriDate,
 } from '@islamic-dashboard/shared';
-import type { PrayerName } from '@islamic-dashboard/shared';
+import type { PrayerName, NotificationPermissionState } from '@islamic-dashboard/shared';
 import { storage } from '../services/storage';
-import { getCurrentPosition } from '../services/geolocation';
-import {
-  currentPermission,
-  requestPermission,
-  scheduleAt,
-  cancelByPrefix,
-} from '../services/notifications';
-import { prayerTimeToDate } from '@islamic-dashboard/shared';
+import { geolocationProvider } from '../services/geolocation';
+import { notificationScheduler } from '../services/notifications';
 
 export default function Dashboard() {
+  useEffect(() => {
+    document.title = 'Dashboard · Islamic Dashboard';
+  }, []);
   const prayer = usePrayerTimes(storage);
   const reading = useReadingPosition(storage);
   const { reminders } = useReminders(storage);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [permission, setPermission] = useState(currentPermission());
-
-  // Schedule a notification for the next prayer whenever the "next prayer" changes.
-  useEffect(() => {
-    cancelByPrefix('prayer:');
-    if (!prayer.data || !prayer.nextPrayer) return;
-    if (permission !== 'granted') return;
-    const when = prayerTimeToDate(prayer.data.timings[prayer.nextPrayer.name]);
-    scheduleAt(
-      `prayer:${prayer.nextPrayer.name}`,
-      when.getTime(),
-      `Time for ${prayer.nextPrayer.name}`,
-      `${prayer.settings.city} · ${prayer.data.timings[prayer.nextPrayer.name]}`,
-    );
-  }, [prayer.data, prayer.nextPrayer, prayer.settings.city, permission]);
-
-  // Schedule notifications for each upcoming timed reminder.
-  useEffect(() => {
-    cancelByPrefix('reminder:');
-    if (permission !== 'granted') return;
-    const now = Date.now();
-    reminders
-      .filter((r) => !r.complete && r.dueTime !== null && r.dueTime > now)
-      .forEach((r) => {
-        scheduleAt(`reminder:${r.id}`, r.dueTime!, r.title, 'Reminder is due');
-      });
-  }, [reminders, permission]);
+  const [permission, setPermission] = useState<NotificationPermissionState>(
+    () => notificationScheduler.currentPermission(),
+  );
 
   async function handleDetectLocation() {
     setLocating(true);
     setLocationError(null);
     try {
-      const coords = await getCurrentPosition();
+      const coords = await geolocationProvider.getCurrentPosition();
       await prayer.updateSettings({ latitude: coords.latitude, longitude: coords.longitude });
     } catch (e) {
       setLocationError(e instanceof Error ? e.message : 'Failed to detect location');
@@ -66,7 +39,7 @@ export default function Dashboard() {
   }
 
   async function handleEnableNotifications() {
-    const result = await requestPermission();
+    const result = await notificationScheduler.requestPermission();
     setPermission(result);
   }
 
@@ -86,10 +59,10 @@ export default function Dashboard() {
       )}
 
       <div className="grid">
-        <div className="card">
-          <h2>Prayer Times</h2>
-          {prayer.loading && <p style={{ color: 'var(--muted)' }}>Loading…</p>}
-          {prayer.error && <p style={{ color: 'var(--error)' }}>{prayer.error}</p>}
+        <section className="card" aria-labelledby="prayer-times-heading">
+          <h2 id="prayer-times-heading">Prayer Times</h2>
+          {prayer.loading && <p style={{ color: 'var(--muted)' }} role="status" aria-live="polite">Loading…</p>}
+          {prayer.error && <p style={{ color: 'var(--error)' }} role="alert">{prayer.error}</p>}
           {prayer.data && (
             <>
               <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 12 }}>
@@ -129,17 +102,17 @@ export default function Dashboard() {
                 {locating ? 'Detecting…' : 'Use my location'}
               </button>
               {locationError && (
-                <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: 6 }}>
+                <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: 6 }} role="alert">
                   {locationError}
                 </p>
               )}
             </>
           )}
-        </div>
+        </section>
 
-        <div className="card">
-          <h2>Continue Reading</h2>
-          {reading.loading && <p style={{ color: 'var(--muted)' }}>Loading…</p>}
+        <section className="card" aria-labelledby="continue-reading-heading">
+          <h2 id="continue-reading-heading">Continue Reading</h2>
+          {reading.loading && <p style={{ color: 'var(--muted)' }} role="status" aria-live="polite">Loading…</p>}
           {!reading.loading && !reading.position && (
             <p style={{ color: 'var(--muted)' }}>
               No saved position yet. <Link to="/quran" style={{ color: 'var(--accent)' }}>Start reading →</Link>
@@ -162,10 +135,10 @@ export default function Dashboard() {
               </Link>
             </>
           )}
-        </div>
+        </section>
 
-        <div className="card">
-          <h2>Upcoming Reminders</h2>
+        <section className="card" aria-labelledby="upcoming-reminders-heading">
+          <h2 id="upcoming-reminders-heading">Upcoming Reminders</h2>
           {upcomingReminders.length === 0 && (
             <p style={{ color: 'var(--muted)' }}>
               No open reminders. <Link to="/reminders" style={{ color: 'var(--accent)' }}>Add one →</Link>
@@ -183,7 +156,7 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

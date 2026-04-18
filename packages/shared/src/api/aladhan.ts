@@ -1,6 +1,12 @@
 import type { DailyPrayerData, PrayerTimings, HijriDate } from '../models/prayer';
+import { httpFetchJson } from './httpClient';
 
 const BASE_URL = 'https://api.aladhan.com/v1';
+
+/** Prayer timings are stable within a calendar day; 6h is a safe in-memory TTL. */
+const PRAYER_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+/** Network timeout — mobile networks can be slow. */
+const REQUEST_TIMEOUT_MS = 10_000;
 
 /** Raw Aladhan API response shape. */
 interface AladhanResponse {
@@ -23,36 +29,42 @@ interface AladhanResponse {
   };
 }
 
-/**
- * Fetch prayer times by city and country.
- */
+/** Local-date path segment in AlAdhan's DD-MM-YYYY format. */
+function todayPath(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+}
+
+async function fetchAladhan(path: string, params: Record<string, string | number>): Promise<DailyPrayerData> {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])),
+  );
+  const url = `${BASE_URL}${path}?${qs.toString()}`;
+  const json = await httpFetchJson<AladhanResponse>(url, {
+    timeoutMs: REQUEST_TIMEOUT_MS,
+    cacheTtlMs: PRAYER_CACHE_TTL_MS,
+  });
+  if (json.code !== 200) throw new Error(json.status || 'Aladhan API error');
+  return mapResponse(json);
+}
+
+/** Fetch prayer times by city and country. Cached per (city, country, method, date). */
 export async function fetchPrayerTimesByCity(
   city: string,
   country: string,
   method: number = 5,
 ): Promise<DailyPrayerData> {
-  const url = `${BASE_URL}/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${method}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Aladhan API error: ${res.status}`);
-  const json = (await res.json()) as AladhanResponse;
-  if (json.code !== 200) throw new Error(json.status || 'Aladhan API error');
-  return mapResponse(json);
+  return fetchAladhan(`/timingsByCity/${todayPath()}`, { city, country, method });
 }
 
-/**
- * Fetch prayer times by geographic coordinates.
- */
+/** Fetch prayer times by coordinates. Cached per (lat, lng, method, date). */
 export async function fetchPrayerTimesByCoords(
   latitude: number,
   longitude: number,
   method: number = 5,
 ): Promise<DailyPrayerData> {
-  const url = `${BASE_URL}/timings/${Math.floor(Date.now() / 1000)}?latitude=${latitude}&longitude=${longitude}&method=${method}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Aladhan API error: ${res.status}`);
-  const json = (await res.json()) as AladhanResponse;
-  if (json.code !== 200) throw new Error(json.status || 'Aladhan API error');
-  return mapResponse(json);
+  return fetchAladhan(`/timings/${todayPath()}`, { latitude, longitude, method });
 }
 
 function mapResponse(json: AladhanResponse): DailyPrayerData {

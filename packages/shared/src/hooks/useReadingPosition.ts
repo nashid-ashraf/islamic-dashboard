@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ReadingPosition } from '../models/quran';
-import type { StorageService } from '../storage/types';
+import type { StorageService } from '../ports/storage';
 
 export interface ReadingPositionState {
   position: ReadingPosition | null;

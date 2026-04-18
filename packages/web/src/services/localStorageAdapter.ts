@@ -1,7 +1,10 @@
-import type { StorageService } from './types';
-import type { Bookmark, ReadingPosition } from '../models/quran';
-import type { Reminder } from '../models/reminder';
-import type { PrayerSettings } from '../models/prayer';
+import type {
+  StorageService,
+  Bookmark,
+  ReadingPosition,
+  Reminder,
+  PrayerSettings,
+} from '@islamic-dashboard/shared';
 
 const KEYS = {
   bookmarks: 'islamic_bookmarks',
@@ -23,13 +26,8 @@ function setItem(key: string, value: unknown): void {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-/**
- * Web storage adapter using localStorage.
- * All methods are async to match the StorageService interface,
- * even though localStorage is synchronous.
- */
+/** Web `StorageService` implementation backed by `localStorage`. */
 export class LocalStorageAdapter implements StorageService {
-  // Bookmarks
   async getBookmarks(): Promise<Bookmark[]> {
     return getItem<Bookmark[]>(KEYS.bookmarks) ?? [];
   }
@@ -45,7 +43,6 @@ export class LocalStorageAdapter implements StorageService {
     setItem(KEYS.bookmarks, bookmarks.filter((b) => b.id !== id));
   }
 
-  // Reading Position
   async getReadingPosition(): Promise<ReadingPosition | null> {
     return getItem<ReadingPosition>(KEYS.readingPosition);
   }
@@ -54,7 +51,6 @@ export class LocalStorageAdapter implements StorageService {
     setItem(KEYS.readingPosition, position);
   }
 
-  // Reminders
   async getReminders(): Promise<Reminder[]> {
     return getItem<Reminder[]>(KEYS.reminders) ?? [];
   }
@@ -79,7 +75,6 @@ export class LocalStorageAdapter implements StorageService {
     setItem(KEYS.reminders, reminders.filter((r) => r.id !== id));
   }
 
-  // Settings
   async getPrayerSettings(): Promise<PrayerSettings | null> {
     return getItem<PrayerSettings>(KEYS.prayerSettings);
   }

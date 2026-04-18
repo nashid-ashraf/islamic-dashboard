@@ -8,6 +8,9 @@ import {
 import { storage } from '../services/storage';
 
 export default function QuranReader() {
+  useEffect(() => {
+    document.title = 'Quran · Islamic Dashboard';
+  }, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSurah = Math.max(1, Math.min(114, Number(searchParams.get('surah')) || 1));
   const initialAyah = Number(searchParams.get('ayah')) || null;
@@ -117,24 +120,24 @@ export default function QuranReader() {
       </div>
 
       {quran.error && (
-        <div className="card" style={{ color: 'var(--error)' }}>{quran.error}</div>
+        <div className="card" style={{ color: 'var(--error)' }} role="alert">{quran.error}</div>
       )}
 
       {quran.loading && !quran.currentSurah && (
-        <div className="loading">Loading surah…</div>
+        <div className="loading" role="status" aria-live="polite">Loading surah…</div>
       )}
 
       {quran.currentSurah && (
         <>
-          <div className="card">
+          <section className="card" aria-label="Surah information">
             <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
               {quran.currentSurah.meta.englishName} · {quran.currentSurah.meta.englishNameTranslation} · {quran.currentSurah.meta.revelationType} · {quran.currentSurah.meta.numberOfAyahs} ayahs
             </p>
-          </div>
+          </section>
 
           {surahBookmarks.length > 0 && (
-            <div className="card">
-              <h2>Bookmarks in this surah</h2>
+            <section className="card" aria-labelledby="surah-bookmarks-heading">
+              <h2 id="surah-bookmarks-heading">Bookmarks in this surah</h2>
               <ul style={{ listStyle: 'none', padding: 0 }}>
                 {surahBookmarks.map((b) => (
                   <li key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -158,18 +161,19 @@ export default function QuranReader() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
           )}
 
-          <div className="card">
+          <section className="card" aria-label="Ayahs">
             {quran.visibleAyahs.map((ayah) => {
               const marked = bookmarks.isBookmarked(quran.currentSurah!.meta.number, ayah.numberInSurah);
               return (
-                <div
+                <article
                   key={ayah.number}
                   id={`ayah-${ayah.numberInSurah}`}
                   data-ayah={ayah.numberInSurah}
                   className="ayah"
+                  aria-label={`Ayah ${ayah.numberInSurah}`}
                 >
                   <div className="ayah-header">
                     <span>Ayah {ayah.numberInSurah}</span>
@@ -194,12 +198,12 @@ export default function QuranReader() {
                       aria-label={marked ? 'Remove bookmark' : 'Add bookmark'}
                       title={marked ? 'Remove bookmark' : 'Add bookmark'}
                     >
-                      {marked ? '★' : '☆'}
+                      <span aria-hidden="true">{marked ? '★' : '☆'}</span>
                     </button>
                   </div>
-                  <p className="ayah-arabic">{ayah.text}</p>
+                  <p className="ayah-arabic" lang="ar" dir="rtl">{ayah.text}</p>
                   <p className="ayah-translation">{ayah.translation}</p>
-                </div>
+                </article>
               );
             })}
 
@@ -212,7 +216,7 @@ export default function QuranReader() {
                 Load more ({quran.totalAyahs - quran.visibleAyahs.length} remaining)
               </button>
             )}
-          </div>
+          </section>
         </>
       )}
     </div>

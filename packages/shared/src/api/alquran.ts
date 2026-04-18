@@ -1,6 +1,11 @@
 import type { SurahMeta, SurahData, Ayah } from '../models/quran';
+import { httpFetchJson } from './httpClient';
 
 const BASE_URL = 'https://api.alquran.cloud/v1';
+
+/** Quran content is immutable; 24h session-scope cache is plenty. */
+const CONTENT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 /** Raw API response wrappers. */
 interface AlQuranSurahResponse {
@@ -36,20 +41,19 @@ interface AlQuranSurahListResponse {
 
 /**
  * Fetch a complete surah with Arabic text and English (Sahih) translation.
- * Makes two parallel API calls and merges the results.
+ * Makes two parallel cached API calls and merges the results.
  */
 export async function fetchSurah(surahNumber: number): Promise<SurahData> {
-  const [arRes, enRes] = await Promise.all([
-    fetch(`${BASE_URL}/surah/${surahNumber}`),
-    fetch(`${BASE_URL}/surah/${surahNumber}/en.sahih`),
+  const [arJson, enJson] = await Promise.all([
+    httpFetchJson<AlQuranSurahResponse>(`${BASE_URL}/surah/${surahNumber}`, {
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      cacheTtlMs: CONTENT_CACHE_TTL_MS,
+    }),
+    httpFetchJson<AlQuranSurahResponse>(`${BASE_URL}/surah/${surahNumber}/en.sahih`, {
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      cacheTtlMs: CONTENT_CACHE_TTL_MS,
+    }),
   ]);
-
-  if (!arRes.ok || !enRes.ok) {
-    throw new Error(`AlQuran API error: ar=${arRes.status} en=${enRes.status}`);
-  }
-
-  const arJson = (await arRes.json()) as AlQuranSurahResponse;
-  const enJson = (await enRes.json()) as AlQuranSurahResponse;
 
   if (arJson.code !== 200 || enJson.code !== 200) {
     throw new Error('AlQuran API returned non-200 code');
@@ -80,13 +84,12 @@ export async function fetchSurah(surahNumber: number): Promise<SurahData> {
   };
 }
 
-/**
- * Fetch metadata for all 114 surahs (no ayah text).
- */
+/** Fetch metadata for all 114 surahs (no ayah text). Cached for the session. */
 export async function fetchSurahList(): Promise<SurahMeta[]> {
-  const res = await fetch(`${BASE_URL}/surah`);
-  if (!res.ok) throw new Error(`AlQuran API error: ${res.status}`);
-  const json = (await res.json()) as AlQuranSurahListResponse;
+  const json = await httpFetchJson<AlQuranSurahListResponse>(`${BASE_URL}/surah`, {
+    timeoutMs: REQUEST_TIMEOUT_MS,
+    cacheTtlMs: CONTENT_CACHE_TTL_MS,
+  });
   if (json.code !== 200) throw new Error('AlQuran API returned non-200 code');
 
   return json.data.map((s) => ({

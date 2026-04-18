@@ -3,9 +3,8 @@ import type { Reminder } from '../models/reminder';
 import type { PrayerSettings } from '../models/prayer';
 
 /**
- * Abstract storage interface.
- * Implementations: localStorage (web), expo-sqlite (mobile).
- * Designed for future cloud sync — all entities have timestamps.
+ * Platform-agnostic persistence port.
+ * Web implementation: localStorage. Mobile: expo-sqlite / AsyncStorage.
  */
 export interface StorageService {
   // Bookmarks

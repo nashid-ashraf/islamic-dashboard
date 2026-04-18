@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useReminders } from '@islamic-dashboard/shared';
 import type { Reminder } from '@islamic-dashboard/shared';
 import { storage } from '../services/storage';
@@ -13,6 +13,9 @@ function toLocalInput(ms: number): string {
 }
 
 export default function Reminders() {
+  useEffect(() => {
+    document.title = 'Reminders · Islamic Dashboard';
+  }, []);
   const { reminders, loading, addReminder, toggleComplete, deleteReminder } = useReminders(storage);
   const [title, setTitle] = useState('');
   const [dueInput, setDueInput] = useState(toLocalInput(Date.now() + 60 * 60 * 1000));
@@ -45,8 +48,8 @@ export default function Reminders() {
     <div>
       <h1 style={{ color: 'var(--accent)', marginBottom: 16 }}>Reminders</h1>
 
-      <form className="card" onSubmit={handleSubmit}>
-        <h2>New reminder</h2>
+      <form className="card" onSubmit={handleSubmit} aria-labelledby="new-reminder-heading">
+        <h2 id="new-reminder-heading">New reminder</h2>
         <div className="field">
           <label htmlFor="r-title">Title</label>
           <input
@@ -98,9 +101,9 @@ export default function Reminders() {
         </button>
       </form>
 
-      <div className="card">
-        <h2>Open ({open.length})</h2>
-        {loading && <p style={{ color: 'var(--muted)' }}>Loading…</p>}
+      <section className="card" aria-labelledby="open-reminders-heading">
+        <h2 id="open-reminders-heading">Open ({open.length})</h2>
+        {loading && <p style={{ color: 'var(--muted)' }} role="status" aria-live="polite">Loading…</p>}
         {!loading && open.length === 0 && (
           <p style={{ color: 'var(--muted)' }}>No open reminders.</p>
         )}
@@ -112,11 +115,11 @@ export default function Reminders() {
             onDelete={() => deleteReminder(r.id)}
           />
         ))}
-      </div>
+      </section>
 
       {done.length > 0 && (
-        <div className="card">
-          <h2>Completed ({done.length})</h2>
+        <section className="card" aria-labelledby="completed-reminders-heading">
+          <h2 id="completed-reminders-heading">Completed ({done.length})</h2>
           {done.map((r) => (
             <ReminderRow
               key={r.id}
@@ -125,7 +128,7 @@ export default function Reminders() {
               onDelete={() => deleteReminder(r.id)}
             />
           ))}
-        </div>
+        </section>
       )}
     </div>
   );
