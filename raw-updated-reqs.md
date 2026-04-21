@@ -1,0 +1,3 @@
+- Can the full Quran be locally cached after explicit user permission on first load? that should make later steps easier
+- Add a weekly view of all the user-set reminders that the user has completed/missed. Create a visual counter such % completed this week (with daily recaps that say on the MOnday view - 7/10 activities completed today)
+- The adhkars from hisnul muslim should be imported and be part of the original offline app. ONLY the adhkars need to be imported, not the app's full functionality

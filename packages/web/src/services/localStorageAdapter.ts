@@ -1,9 +1,10 @@
-import type {
-  StorageService,
-  Bookmark,
-  ReadingPosition,
-  Reminder,
-  PrayerSettings,
+import {
+  migrateReminders,
+  type StorageService,
+  type Bookmark,
+  type ReadingPosition,
+  type Reminder,
+  type PrayerSettings,
 } from '@islamic-dashboard/shared';
 
 const KEYS = {
@@ -52,7 +53,14 @@ export class LocalStorageAdapter implements StorageService {
   }
 
   async getReminders(): Promise<Reminder[]> {
-    return getItem<Reminder[]>(KEYS.reminders) ?? [];
+    const raw = getItem<unknown[]>(KEYS.reminders) ?? [];
+    const migrated = migrateReminders(raw);
+    // If migration altered anything, write back once so subsequent reads are cheap
+    // and future writes never touch v0 shapes.
+    if (migrated.length !== raw.length || migrated.some((m, i) => m !== raw[i])) {
+      setItem(KEYS.reminders, migrated);
+    }
+    return migrated;
   }
 
   async saveReminder(reminder: Reminder): Promise<void> {
