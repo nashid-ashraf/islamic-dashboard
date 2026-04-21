@@ -117,6 +117,89 @@ Replaced dark-on-dark PNG diagrams with inline Mermaid — renders theme-aware o
 
 ### Still open (architect review nice-to-haves)
 - `ServicesContext` to avoid threading singletons into each page
-- Vitest on shared hooks + GitHub Actions CI
 - Root `ErrorBoundary`
 - Delete legacy `islamic_dashboard.html` prototype at repo root
+
+---
+
+## Session 4 — Vitest suite + CI (2026-04-20)
+
+Closed two of the top nice-to-haves from Session 3.
+
+- Vitest + jsdom + `@testing-library/react` wired into `packages/shared` (`vitest.config.ts`, setup adds `@testing-library/jest-dom/vitest` matchers).
+- In-memory `StorageService` test double at `packages/shared/src/test/mockStorage.ts` — exposes `.state` so assertions read persisted values directly without spies.
+- 30 tests across `httpClient`, `dateHelpers`, `useBookmarks`, `useReadingPosition`, `useReminders`. `useQuran` + `usePrayerTimes` deferred until they get touched (need fetch mocking).
+- GitHub Actions workflow `.github/workflows/ci.yml` — Node 20, typecheck + test + `build:web` on every push/PR to `main`.
+
+Committed as `6cd1aca` — "Add Vitest test suite and GitHub Actions CI".
+
+---
+
+## Session 5 — Requirements expansion + Reminder model v1 refactor (2026-04-21)
+
+Expanded scope significantly, then landed the architectural refactor that unblocks the new scope.
+
+### Requirements capture (REQUIREMENTS.md)
+- **§5A** — 18 handwritten items from a user photo captured as FR-EX1–FR-EX18 (salah pie chart, post-salah tasbih, Duha, post-Maghrib sunnah, Friday Kahf, Mulk/Sajdah before sleep, ayah/hadith of the day, adhkar routines, weekly sunnah).
+- **§5A.5b + §5A.6** — reclassification: FR-EX3/4/6/7/8 (Duha, post-Maghrib, Kahf, Mulk, Sajdah) are **pre-seeded default reminders**, not net-new features. Table showing 12 of 18 items reduce to "sticky reminders" once the Reminder model supports `weekdays`, `category`, `actionLink`, `builtIn`, `completions[]`, `prayerAnchor?`.
+- **§5B** — three new directives from `raw-updated-reqs.md`:
+  - FR-EX19: opt-in full-Quran offline cache (~7 MB).
+  - FR-EX20–22: weekly reminder recap with % completion + per-day breakdown.
+  - FR-EX23–25: Hisnul Muslim adhkar corpus imported in-app (reversal of the earlier deep-link-out plan).
+- **§5C** — 8-point architectural implications list, validated by the `backend-api-security:backend-architect` agent.
+
+### Reminder model v1 refactor
+- Replaced flat shape (`complete: boolean`, `repeat: 'none'|'daily'|'weekly'`, flat `dueTime`) with a discriminated `ReminderSchedule` union: `none / once / daily / weekly / prayerAnchor`. Added `completions[]`, `builtIn`, `enabled`, `action` (`quran` / `adhkar`), `category`, `version: 1`.
+- `migrateReminders(raw)` migrates any mix of v0 / v1 / malformed records; `LocalStorageAdapter.getReminders` writes back once so v0 disappears from disk after first load.
+- New pure helper `resolveNextFireAt(reminder, now)` in `packages/shared/src/utils/reminderSchedule.ts` — handles daily roll-to-tomorrow, weekly roll-to-next-weekday, completion-aware skipping, returns `null` for `prayerAnchor` (orchestrator materializes those).
+- `useReminders.toggleComplete(id)` now appends/removes today's completion rather than flipping a boolean. `deleteReminder` soft-disables built-ins (`enabled: false`) instead of hard-deleting.
+- NotificationOrchestrator switched from raw `r.dueTime` to `resolveNextFireAt`.
+- Test coverage: +13 model tests, +15 schedule-util tests, +2 hook tests (v0 migration on load, soft-delete invariant). 61/61 passing.
+- **Gotcha documented in project memory:** `vi.useFakeTimers()` is incompatible with `@testing-library/react`'s `waitFor` (polls via setTimeout). Hook tests use real time and derive "today" via `localDateKey()`.
+
+Committed as `daa71cb` — "Refactor Reminder model to support built-in catalog and completion history".
+
+---
+
+## Session 6 — Quran offline corpus scaffold (2026-04-22)
+
+Landed the Phase 3.4 / FR-EX19 foundation as a new hexagonal port + web adapter. Fully independent of the Reminder refactor.
+
+### Edition set
+After API discovery: `ar-uthmani`, `en-sahih`, `en-khattab`, `bn-muhiuddin`. Mustafa Khattab's Clear Quran isn't on quran.com's public v4 API — pivoted to the **fawazahmed0/quran-api CDN** (JSDelivr-hosted static JSON) as a second upstream. IndoPak is rendered via a font swap on the Uthmani text, not a separately-cached edition.
+
+### Files added
+- `packages/shared/src/models/editions.ts` — edition registry with per-edition upstream routing.
+- `packages/shared/src/ports/quranCorpus.ts` — `QuranOfflineCorpus` port contract.
+- `packages/shared/src/api/quranCdn.ts` — fawazahmed0 CDN client.
+- `packages/shared/src/test/mockQuranCorpus.ts` — in-memory test double matching `mockStorage`'s `.state` pattern.
+- `packages/shared/src/ports/quranCorpus.test.ts` — 5 contract tests (null-when-empty, progress monotonicity, resumability, abort, invalidate).
+- `packages/shared/src/hooks/useQuran.test.tsx` — 4 tests for the cache-first branch (network fallback, full cache hit, cache miss, half-cached pair).
+- `packages/web/src/services/quranCorpus.ts` — `IndexedDbQuranCorpus` adapter via `idb-keyval`, singleton export.
+- `packages/web/src/components/QuranCorpusConsent.tsx` — consent banner with progress bar, "Not now" / "Don't ask again", and silent ITP re-hydrate.
+- `packages/web/public/fonts/README.md` — IndoPak font asset guidance (SIL OFL options documented; license decision pending).
+
+### Files modified
+- `packages/shared/src/models/quran.ts` — added `EditionAyah` + `EditionSurah` types.
+- `packages/shared/src/api/alquran.ts` — added `fetchEditionSurah(slug, n, signal)` for per-edition fetches.
+- `packages/shared/src/hooks/useQuran.ts` — accepts an options object (`{ corpus, arabicEdition, translationEdition }`); cache-first path merges two cached editions into the flat `Ayah` shape.
+- `packages/web/src/pages/QuranReader.tsx` — passes the corpus, renders the consent banner, adds a Uthmani ↔ IndoPak script selector that flips `data-quran-script` on `<html>`.
+- `packages/web/src/styles/global.css` — `--quran-arabic-font` CSS variable with Uthmani/IndoPak font stacks, swapped via `html[data-quran-script]`.
+- `packages/web/package.json` — adds `idb-keyval@^6.2.1`.
+
+### Storage design
+IndexedDB store `islamic-dashboard-quran/corpus`. Keys: `quran:surah:{edition}:{n}` for records, `quran:manifest` for the `CorpusManifest`. Hydration batches 4 surahs in parallel, persists the manifest after each batch — a mid-download close preserves progress (resumable without re-fetching).
+
+### Verification
+`npm run -w packages/shared test` → 70/70 passing (+9 new: 5 corpus, 4 useQuran). `npm run -w packages/web typecheck` + `build` both clean. QuranReader chunk grew 7.49 KB → 16.05 KB (gz 2.87 → 5.81 KB); total precache 205 KB.
+
+### Not done in this pass
+- IndoPak font binary — CSS variable toggle works but falls through to system fonts until a font file is shipped. `public/fonts/README.md` documents the licensing decision (Scheherazade New OFL recommended).
+- Mobile adapter (`expo-file-system`) — deferred to Phase 4.
+- Pre-seeded reminder catalog — the Reminder model supports `builtIn: true` but no seed data ships yet.
+
+### Still open (next-up candidates)
+- Click-test the browser flow: fresh consent → download → offline navigation → ITP eviction simulation.
+- Seed `packages/shared/data/builtInReminders.ts` for FR-EX3/4/6/7/8.
+- Prayer-anchored orchestration in `NotificationOrchestrator` (today, `resolveNextFireAt` returns null for `prayerAnchor` by design).
+- Weekly recap aggregator (FR-EX20–22) — projection over `completions[]`.

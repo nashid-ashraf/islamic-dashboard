@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { SurahData, SurahMeta, Ayah } from '../models/quran';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { SurahData, SurahMeta, Ayah, EditionSurah } from '../models/quran';
 import { AYAHS_PER_PAGE } from '../models/quran';
 import { fetchSurah, fetchSurahList } from '../api/alquran';
+import type { EditionId } from '../models/editions';
+import { DEFAULT_ARABIC_EDITION, DEFAULT_TRANSLATION_EDITION } from '../models/editions';
+import type { QuranOfflineCorpus } from '../ports/quranCorpus';
 
 export interface QuranState {
   surahList: SurahMeta[];
@@ -20,7 +23,41 @@ export interface QuranActions {
   changeSurah: (direction: 1 | -1) => void;
 }
 
-export function useQuran(initialSurah: number = 1): QuranState & QuranActions {
+export interface UseQuranOptions {
+  /** Optional offline corpus. When supplied and hydrated, reads go cache-first. */
+  corpus?: QuranOfflineCorpus;
+  /** Arabic edition to display. Defaults to Uthmani. */
+  arabicEdition?: EditionId;
+  /** Translation edition to display. Defaults to Sahih International. */
+  translationEdition?: EditionId;
+}
+
+/** Merge two per-edition surahs (Arabic + translation) into the flat Ayah shape. */
+function mergeEditionSurahs(arabic: EditionSurah, translation: EditionSurah): SurahData {
+  const trByAyah = new Map(translation.ayahs.map((a) => [a.numberInSurah, a.text]));
+  const ayahs: Ayah[] = arabic.ayahs.map((a, i) => ({
+    number: i + 1, // derived index; 1-based within surah
+    numberInSurah: a.numberInSurah,
+    text: a.text,
+    translation: trByAyah.get(a.numberInSurah) ?? '',
+    // `juz` and `page` are not in the per-edition shape; defaults are fine for
+    // the reader UI which doesn't surface them yet.
+    juz: 0,
+    page: 0,
+  }));
+  return { meta: arabic.meta, ayahs };
+}
+
+export function useQuran(
+  initialSurah: number = 1,
+  options: UseQuranOptions = {},
+): QuranState & QuranActions {
+  const {
+    corpus,
+    arabicEdition = DEFAULT_ARABIC_EDITION,
+    translationEdition = DEFAULT_TRANSLATION_EDITION,
+  } = options;
+
   const [surahList, setSurahList] = useState<SurahMeta[]>([]);
   const [currentSurah, setCurrentSurah] = useState<SurahData | null>(null);
   const [pageCount, setPageCount] = useState(1);
@@ -29,7 +66,13 @@ export function useQuran(initialSurah: number = 1): QuranState & QuranActions {
   const [error, setError] = useState<string | null>(null);
   const [currentSurahNumber, setCurrentSurahNumber] = useState(initialSurah);
 
-  // Load surah list on mount
+  // Keep edition choices in a ref so loadSurah closure always sees the latest —
+  // avoids stale-capture if the reader UI swaps edition mid-session.
+  const editionsRef = useRef({ arabicEdition, translationEdition });
+  useEffect(() => {
+    editionsRef.current = { arabicEdition, translationEdition };
+  }, [arabicEdition, translationEdition]);
+
   useEffect(() => {
     fetchSurahList()
       .then(setSurahList)
@@ -37,22 +80,33 @@ export function useQuran(initialSurah: number = 1): QuranState & QuranActions {
       .finally(() => setSurahListLoading(false));
   }, []);
 
-  const loadSurah = useCallback(async (surahNumber: number) => {
-    setLoading(true);
-    setError(null);
-    setPageCount(1);
-    try {
-      const data = await fetchSurah(surahNumber);
-      setCurrentSurah(data);
-      setCurrentSurahNumber(surahNumber);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load surah');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loadSurah = useCallback(
+    async (surahNumber: number) => {
+      setLoading(true);
+      setError(null);
+      setPageCount(1);
+      try {
+        const { arabicEdition: ar, translationEdition: tr } = editionsRef.current;
+        let data: SurahData | null = null;
+        if (corpus) {
+          const [arabic, translation] = await Promise.all([
+            corpus.getSurah(ar, surahNumber),
+            corpus.getSurah(tr, surahNumber),
+          ]);
+          if (arabic && translation) data = mergeEditionSurahs(arabic, translation);
+        }
+        if (!data) data = await fetchSurah(surahNumber);
+        setCurrentSurah(data);
+        setCurrentSurahNumber(surahNumber);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load surah');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [corpus],
+  );
 
-  // Load initial surah
   useEffect(() => {
     loadSurah(initialSurah);
   }, [initialSurah, loadSurah]);

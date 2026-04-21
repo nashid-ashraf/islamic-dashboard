@@ -399,10 +399,17 @@ Three new directives from the user that **supersede or extend** earlier decision
 
 ### 5B.1 Full-Quran offline cache (permission-gated)
 
-- **FR-EX19: Full Quran local cache on explicit opt-in** — on first load, prompt the user with a permission dialog: "Download the full Quran (Arabic + English, ~8 MB) for offline use?" If accepted, fetch all 114 surahs in the background, store in the storage port, and serve all subsequent reads from local cache (API only used for updates / re-validation).
-- **Supersedes:** `FR-O3` stale-while-revalidate model for the Quran reader — once the full cache is present, Quran reads are **cache-first** with background revalidation, not network-first.
-- **Mobile note:** On mobile, the full-Quran payload should live on `expo-file-system` / SQLite (not AsyncStorage) due to size.
-- **Consent UX:** must be dismissible; rejecting keeps behavior identical to §3.4 stale-while-revalidate.
+- **FR-EX19: Full Quran local cache on explicit opt-in** — on first load, prompt the user with a permission dialog. If accepted, bulk-download all editions × 114 surahs to the platform storage port and serve subsequent reads cache-first.
+- **Supersedes:** `FR-O3` stale-while-revalidate model for the Quran reader — once the corpus is present, Quran reads are **cache-first**, not network-first.
+- **Consent UX:** dismissible (session-only) or permanent decline. Declining keeps §3.4 stale-while-revalidate path active.
+- **Editions cached (scaffolded 2026-04-22):**
+  - `ar-uthmani` — Arabic Uthmani (AlQuran.cloud `quran-uthmani`)
+  - `en-sahih` — Saheeh International (AlQuran.cloud `en.sahih`)
+  - `en-khattab` — The Clear Quran, Mustafa Khattab (fawazahmed0/quran-api JSDelivr CDN `eng-mustafakhattaba`)
+  - `bn-muhiuddin` — Bengali, Muhiuddin Khan (AlQuran.cloud `bn.bengali`)
+- **IndoPak rendering is a font swap, not a cached edition.** The Quran Reader's script selector toggles `data-quran-script="indopak"` on `<html>`, which flips the `--quran-arabic-font` CSS variable. No extra download.
+- **Scaffold status (2026-04-22):** Port `QuranOfflineCorpus` + web IndexedDB adapter (via `idb-keyval`) landed. `useQuran` accepts an optional corpus; `QuranReader` passes it. `QuranCorpusConsent` component handles the one-time prompt + silent re-hydrate after ITP eviction. Mobile adapter deferred to Phase 4.
+- **Mobile note:** On mobile, the corpus payload will live on `expo-file-system` (not AsyncStorage) due to size.
 
 ### 5B.2 Weekly reminders recap & completion visualization
 

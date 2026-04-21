@@ -109,10 +109,12 @@ sequenceDiagram
 | **Language** | TypeScript (strict mode) |
 | **Monorepo** | npm workspaces (upgradeable to Turborepo) |
 | **Storage** | expo-sqlite (mobile), localStorage (web) — abstracted behind `StorageService` port in `shared/ports/` |
+| **Offline Quran corpus** | IndexedDB via `idb-keyval` (web), `expo-file-system` (mobile, Phase 4) — abstracted behind `QuranOfflineCorpus` port |
 | **Notifications** | expo-notifications (mobile), Web Notification API + setTimeout (web) — abstracted behind `NotificationScheduler` port |
 | **Geolocation** | expo-location (mobile), navigator.geolocation (web) — abstracted behind `GeolocationProvider` port |
 | **API caching** | In-memory TTL cache in `shared/api/httpClient.ts` + Workbox runtime caching via `vite-plugin-pwa` (web prod) |
-| **CI/CD** | GitHub Actions + EAS Build (mobile), Cloudflare Pages (web) |
+| **Testing** | Vitest + @testing-library/react via jsdom; 70+ tests across models, hooks, ports |
+| **CI/CD** | GitHub Actions (typecheck / test / build) + EAS Build (mobile), Cloudflare Pages (web) |
 | **Hosting** | Cloudflare Pages (web PWA) |
 
 ### Monorepo Structure
@@ -150,7 +152,8 @@ Platform-specific concerns live behind three interfaces in `packages/shared/src/
 │ ports/storage.ts         StorageService               │
 │ ports/notifications.ts   NotificationScheduler        │
 │ ports/geolocation.ts     GeolocationProvider          │
-│ hooks/...                depend on StorageService     │
+│ ports/quranCorpus.ts     QuranOfflineCorpus           │
+│ hooks/...                depend on ports              │
 └────────────────────────▲──────────────────────────────┘
                          │ implements
                          │
@@ -160,6 +163,7 @@ Platform-specific concerns live behind three interfaces in `packages/shared/src/
 │ services/localStorageAdapter │   │ services/sqliteAdapter              │
 │ services/notifications (web) │   │ services/notifications (expo)       │
 │ services/geolocation (web)   │   │ services/geolocation (expo)         │
+│ services/quranCorpus (IDB)   │   │ services/quranCorpus (fs, Phase 4)  │
 └──────────────────────────────┘   └─────────────────────────────────────┘
 ```
 
@@ -169,10 +173,11 @@ Platform-specific concerns live behind three interfaces in `packages/shared/src/
 
 | Concern | Shared | Web | Mobile |
 |---------|--------|-----|--------|
-| API clients (Aladhan, AlQuran) + httpClient cache | Direct import | — | — |
+| API clients (Aladhan, AlQuran, fawazahmed0 CDN) + httpClient cache | Direct import | — | — |
 | Data models & types | Direct import | — | — |
 | React hooks (business logic) | Direct import | — | — |
 | Storage | `StorageService` port | `LocalStorageAdapter` | SQLite adapter (Phase 4) |
+| Offline Quran corpus | `QuranOfflineCorpus` port | `IndexedDbQuranCorpus` (via `idb-keyval`) | `expo-file-system` adapter (Phase 4) |
 | Notifications | `NotificationScheduler` port | `WebNotificationScheduler` (setTimeout + Notification API) | expo-notifications (Phase 4) |
 | Geolocation | `GeolocationProvider` port | `WebGeolocationProvider` | expo-location (Phase 4) |
 | UI components | — | `<div>` + CSS | `<View>` + StyleSheet |
@@ -203,15 +208,22 @@ Platform divergence is handled via `.web.ts` / `.native.ts` / `.ios.ts` / `.andr
 - Optional adhan audio clip on notification (30-second limit on iOS)
 
 ### Custom Reminders
-- Create reminders with title, optional date/time, and repeat (none / daily / weekly)
-- Toggle complete/incomplete with visual strikethrough
-- **Timed push notifications** — "Remind me to recite Ayat al-Kursi at 2 PM"
-- Repeating reminders auto-reschedule after firing
-- Sorted by due time (upcoming first)
+- Schedule union supporting `once` / `daily` / `weekly (weekdays[])` / `prayerAnchor` — day-gated and prayer-relative reminders (e.g. "15 min after Maghrib")
+- Completion history (`completions[]` keyed by local date) — not a flat boolean, enabling streak and weekly-recap analytics
+- Action deep-links (`quran` / `adhkar`) — reminders can point at an in-app surface, not just show text
+- Pre-seeded catalog support (`builtIn: true`) — ships default reminders the user can toggle but not delete (catalog seed pending)
+- **Timed push notifications** — next-fire time resolved by a pure `resolveNextFireAt(reminder, now)` helper shared between the UI sort and the notification orchestrator
+
+### Offline Quran Corpus (opt-in)
+- One-time consent banner offers to bulk-download the full Quran + translations for offline use
+- Cached editions: **Arabic (Uthmani)** + **Saheeh International** + **The Clear Quran — Mustafa Khattab** + **Bengali (Muhiuddin Khan)**
+- **IndoPak rendering is a font swap, not a separate download** — same Uthmani Unicode, different typeface
+- Stored in IndexedDB via a `QuranOfflineCorpus` port; bookmarks across any surah resolve offline once the corpus is present
+- Resumable hydration (partial-download safe) and silent re-hydrate on iOS Safari ITP eviction
 
 ### Offline & PWA
 - **Service worker** caches app shell + last-fetched API data
-- Quran text: cache-first (text never changes — once loaded, always available)
+- Quran text: cache-first via the `QuranOfflineCorpus` port when opted in; Workbox runtime cache as fallback
 - Prayer times: stale-while-revalidate with 6-hour TTL
 - PWA manifest for "Add to Home Screen" installation on web
 - Offline indicator when serving cached data
@@ -225,7 +237,8 @@ Both APIs are free, require no authentication, and support CORS.
 | API | Purpose | Documentation |
 |-----|---------|---------------|
 | [Aladhan](https://aladhan.com/prayer-times-api) | Prayer times by city/coordinates, calculation methods, Hijri calendar | `https://api.aladhan.com/v1/` |
-| [AlQuran Cloud](https://alquran.cloud/api) | Quran Arabic text, 100+ translations, surah metadata | `https://api.alquran.cloud/v1/` |
+| [AlQuran Cloud](https://alquran.cloud/api) | Quran Arabic text, 100+ translations, surah metadata (Uthmani, Saheeh International, Bengali Muhiuddin Khan) | `https://api.alquran.cloud/v1/` |
+| [fawazahmed0/quran-api](https://github.com/fawazahmed0/quran-api) | Static JSON edition CDN via JSDelivr — used for Mustafa Khattab's "The Clear Quran" (not available on AlQuran.cloud) | `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/` |
 
 ---
 
@@ -306,6 +319,9 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 | **Phase 1+2** — Monorepo scaffold & shared business logic | Done |
 | **Phase 3** — Web app (Vite + React PWA) wired to shared hooks | Done |
 | **Phase 3.1** — Accessibility pass + hexagonal ports + API caching + notification re-hydration | Done |
+| **Phase 3.2** — Vitest suite + GitHub Actions CI | Done |
+| **Phase 3.3** — Reminder model v1 refactor (schedule union + completions history + built-in catalog field) | Done |
+| **Phase 3.4** — Quran offline corpus port + web IndexedDB adapter (FR-EX19) | Done |
 | **Phase 4** — Mobile app (Expo) | Planned |
 | **Phase 5** — CI/CD pipelines | Planned |
 | Production deployment | Planned |
@@ -332,15 +348,20 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 - Offline support and PWA installation
 - Device-local storage only
 
+### v1.1 (in progress — see REQUIREMENTS.md §5A/§5B)
+- 18 expanded daily-practice requirements (FR-EX1–FR-EX18) — most land as pre-seeded reminders once the catalog seed ships
+- Post-salah tasbih counter (33×3) — bespoke counter UI
+- Five-salah daily pie chart — reads a new `DailyLog` aggregate
+- Opt-in full Quran + 3 translations offline (scaffolded — see Phase 3.4)
+- Hisnul Muslim adhkar corpus imported in-app (licensing audit pending)
+- Weekly reminder recap with completion analytics
+
 ### v2 (Future)
 - Cloud sync with user accounts (Firebase/Supabase) — storage layer is pre-architected for this
 - Qibla compass
-- Dhikr / Tasbeeh counter
-- Hadith of the Day
-- Light theme toggle
-- Multiple Quran translations
-- Audio recitation
+- Audio recitation of Quran ayahs
 - Home screen widgets (iOS/Android)
+- Light theme toggle
 
 ---
 
