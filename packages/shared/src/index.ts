@@ -5,6 +5,7 @@
 export * from './models/prayer';
 export * from './models/quran';
 export * from './models/reminder';
+export * from './models/editions';
 
 // Platform ports (interfaces only — implementations live in platform packages)
 export * from './ports';
@@ -12,6 +13,7 @@ export * from './ports';
 // API clients
 export * from './api/aladhan';
 export * from './api/alquran';
+export * from './api/quranCdn';
 export { clearHttpCache } from './api/httpClient';
 
 // Hooks

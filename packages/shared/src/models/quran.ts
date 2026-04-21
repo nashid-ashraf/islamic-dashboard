@@ -45,3 +45,22 @@ export interface ReadingPosition {
 
 /** How many ayahs to load per page in the scrollable reader. */
 export const AYAHS_PER_PAGE = 10;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Per-edition surah data (used by the offline corpus)
+
+/**
+ * A single ayah's text for one specific edition. The corpus stores one of these
+ * per (edition, ayah) — the reader merges a pair (Arabic + translation) into
+ * the flat `Ayah` shape above at render time.
+ */
+export interface EditionAyah {
+  numberInSurah: number;
+  text: string;
+}
+
+/** A whole surah for one edition, as cached by `QuranOfflineCorpus`. */
+export interface EditionSurah {
+  meta: SurahMeta;
+  ayahs: EditionAyah[];
+}

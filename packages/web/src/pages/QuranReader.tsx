@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   useQuran,
@@ -6,6 +6,11 @@ import {
   useReadingPosition,
 } from '@islamic-dashboard/shared';
 import { storage } from '../services/storage';
+import { quranCorpus } from '../services/quranCorpus';
+import { QuranCorpusConsent } from '../components/QuranCorpusConsent';
+
+type ArabicScript = 'uthmani' | 'indopak';
+const SCRIPT_KEY = 'quran_arabic_script';
 
 export default function QuranReader() {
   useEffect(() => {
@@ -15,9 +20,19 @@ export default function QuranReader() {
   const initialSurah = Math.max(1, Math.min(114, Number(searchParams.get('surah')) || 1));
   const initialAyah = Number(searchParams.get('ayah')) || null;
 
-  const quran = useQuran(initialSurah);
+  const quran = useQuran(initialSurah, { corpus: quranCorpus });
   const bookmarks = useBookmarks(storage);
   const reading = useReadingPosition(storage);
+
+  // Arabic script toggle (Uthmani ↔ IndoPak). Same Uthmani text, different font.
+  const [script, setScript] = useState<ArabicScript>(() => {
+    const saved = localStorage.getItem(SCRIPT_KEY);
+    return saved === 'indopak' ? 'indopak' : 'uthmani';
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute('data-quran-script', script);
+    localStorage.setItem(SCRIPT_KEY, script);
+  }, [script]);
 
   // Scroll to target ayah (from ?ayah=N) once the surah is loaded.
   const scrollTarget = useRef<number | null>(initialAyah);
@@ -89,6 +104,8 @@ export default function QuranReader() {
     <div>
       <h1 style={{ color: 'var(--accent)', marginBottom: 16 }}>Quran Reader</h1>
 
+      <QuranCorpusConsent corpus={quranCorpus} />
+
       <div className="toolbar">
         <select
           className="field"
@@ -117,6 +134,18 @@ export default function QuranReader() {
         >
           Next →
         </button>
+        <label style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          Script:
+          <select
+            value={script}
+            onChange={(e) => setScript(e.target.value as ArabicScript)}
+            style={{ padding: '4px 8px', background: 'var(--background)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6 }}
+            aria-label="Arabic script"
+          >
+            <option value="uthmani">Uthmani</option>
+            <option value="indopak">IndoPak</option>
+          </select>
+        </label>
       </div>
 
       {quran.error && (

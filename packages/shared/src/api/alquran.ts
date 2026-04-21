@@ -1,4 +1,4 @@
-import type { SurahMeta, SurahData, Ayah } from '../models/quran';
+import type { SurahMeta, SurahData, Ayah, EditionSurah } from '../models/quran';
 import { httpFetchJson } from './httpClient';
 
 const BASE_URL = 'https://api.alquran.cloud/v1';
@@ -81,6 +81,42 @@ export async function fetchSurah(surahNumber: number): Promise<SurahData> {
       revelationType: arData.revelationType,
     },
     ayahs,
+  };
+}
+
+/**
+ * Fetch a single edition's text (Arabic OR a translation, depending on slug).
+ * Returns the corpus-cache-ready `EditionSurah` shape. Used by the offline
+ * corpus adapter during hydration.
+ */
+export async function fetchEditionSurah(
+  editionSlug: string,
+  surahNumber: number,
+  signal?: AbortSignal,
+): Promise<EditionSurah> {
+  const json = await httpFetchJson<AlQuranSurahResponse>(
+    `${BASE_URL}/surah/${surahNumber}/${editionSlug}`,
+    {
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      cacheTtlMs: CONTENT_CACHE_TTL_MS,
+      signal,
+    },
+  );
+  if (json.code !== 200) throw new Error('AlQuran API returned non-200 code');
+  const d = json.data;
+  return {
+    meta: {
+      number: d.number,
+      name: d.name,
+      englishName: d.englishName,
+      englishNameTranslation: d.englishNameTranslation,
+      numberOfAyahs: d.numberOfAyahs,
+      revelationType: d.revelationType,
+    },
+    ayahs: d.ayahs.map((a) => ({
+      numberInSurah: a.numberInSurah,
+      text: a.text,
+    })),
   };
 }
 

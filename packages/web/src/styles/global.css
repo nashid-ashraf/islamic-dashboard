@@ -186,8 +186,25 @@ body {
   font-size: 0.8rem;
 }
 
+/*
+ * Arabic script rendering (Uthmani vs IndoPak).
+ * We cache only the Uthmani text in the offline corpus. "IndoPak" is a font
+ * swap over the same Unicode — no additional edition is downloaded. Users flip
+ * via the Quran Reader's script selector, which toggles `data-quran-script`
+ * on the root element. Drop-in web-safe fallbacks keep rendering sane if the
+ * IndoPak font file isn't shipped yet.
+ */
+:root {
+  --quran-arabic-font-uthmani: 'Amiri', 'Traditional Arabic', Georgia, serif;
+  --quran-arabic-font-indopak: 'Al Majeed Quranic', 'Noto Naskh Arabic', 'Scheherazade New', 'Traditional Arabic', serif;
+  --quran-arabic-font: var(--quran-arabic-font-uthmani);
+}
+html[data-quran-script="indopak"] {
+  --quran-arabic-font: var(--quran-arabic-font-indopak);
+}
+
 .ayah-arabic {
-  font-family: 'Amiri', 'Traditional Arabic', Georgia, serif;
+  font-family: var(--quran-arabic-font);
   font-size: 1.7rem;
   line-height: 2;
   text-align: right;
