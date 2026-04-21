@@ -1,15 +1,36 @@
 import { useEffect, useState } from 'react';
-import { useReminders } from '@islamic-dashboard/shared';
-import type { Reminder } from '@islamic-dashboard/shared';
+import {
+  useReminders,
+  isCompletedToday,
+  resolveNextFireAt,
+} from '@islamic-dashboard/shared';
+import type { Reminder, ReminderSchedule } from '@islamic-dashboard/shared';
 import { storage } from '../services/storage';
 
-type Repeat = 'none' | 'daily' | 'weekly';
+type RepeatMode = 'none' | 'daily' | 'weekly';
 
 /** Format a Date as "YYYY-MM-DDTHH:mm" for <input type="datetime-local">. */
 function toLocalInput(ms: number): string {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function hhmm(ms: number): string {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Translate the UI's legacy {timed, dueInput, repeat} fields into the typed schedule union. */
+function buildSchedule(timed: boolean, dueInput: string, repeat: RepeatMode): ReminderSchedule {
+  if (!timed && repeat === 'none') return { kind: 'none' };
+  const dueMs = new Date(dueInput).getTime();
+  if (repeat === 'none') return { kind: 'once', dueTime: dueMs };
+  if (repeat === 'daily') return { kind: 'daily', timeOfDay: timed ? hhmm(dueMs) : null };
+  // weekly: seed the weekday from the picker so existing UX of "weekly" keeps working
+  const weekday = new Date(dueMs).getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  return { kind: 'weekly', weekdays: [weekday], timeOfDay: timed ? hhmm(dueMs) : null };
 }
 
 export default function Reminders() {
@@ -20,7 +41,7 @@ export default function Reminders() {
   const [title, setTitle] = useState('');
   const [dueInput, setDueInput] = useState(toLocalInput(Date.now() + 60 * 60 * 1000));
   const [timed, setTimed] = useState(true);
-  const [repeat, setRepeat] = useState<Repeat>('none');
+  const [repeat, setRepeat] = useState<RepeatMode>('none');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,8 +51,7 @@ export default function Reminders() {
     try {
       await addReminder({
         title: title.trim(),
-        dueTime: timed ? new Date(dueInput).getTime() : null,
-        repeat,
+        schedule: buildSchedule(timed, dueInput, repeat),
       });
       setTitle('');
       setRepeat('none');
@@ -41,8 +61,8 @@ export default function Reminders() {
     }
   }
 
-  const open = reminders.filter((r) => !r.complete);
-  const done = reminders.filter((r) => r.complete);
+  const open = reminders.filter((r) => r.enabled && !isCompletedToday(r));
+  const done = reminders.filter((r) => isCompletedToday(r));
 
   return (
     <div>
@@ -89,7 +109,7 @@ export default function Reminders() {
           <select
             id="r-repeat"
             value={repeat}
-            onChange={(e) => setRepeat(e.target.value as Repeat)}
+            onChange={(e) => setRepeat(e.target.value as RepeatMode)}
           >
             <option value="none">No repeat</option>
             <option value="daily">Daily</option>
@@ -119,7 +139,7 @@ export default function Reminders() {
 
       {done.length > 0 && (
         <section className="card" aria-labelledby="completed-reminders-heading">
-          <h2 id="completed-reminders-heading">Completed ({done.length})</h2>
+          <h2 id="completed-reminders-heading">Completed today ({done.length})</h2>
           {done.map((r) => (
             <ReminderRow
               key={r.id}
@@ -134,6 +154,26 @@ export default function Reminders() {
   );
 }
 
+function scheduleLabel(reminder: Reminder): string {
+  const nextFire = resolveNextFireAt(reminder);
+  if (nextFire) return new Date(nextFire).toLocaleString();
+  switch (reminder.schedule.kind) {
+    case 'none':
+      return 'Anytime';
+    case 'once':
+      return 'Past';
+    case 'daily':
+      return reminder.schedule.timeOfDay ? `Daily · ${reminder.schedule.timeOfDay}` : 'Daily';
+    case 'weekly':
+      return 'Weekly';
+    case 'prayerAnchor': {
+      const { prayer, offsetMinutes } = reminder.schedule.anchor;
+      const sign = offsetMinutes >= 0 ? '+' : '';
+      return `${prayer} ${sign}${offsetMinutes}m`;
+    }
+  }
+}
+
 function ReminderRow({
   reminder,
   onToggle,
@@ -143,23 +183,24 @@ function ReminderRow({
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const completed = isCompletedToday(reminder);
   return (
-    <div className={reminder.complete ? 'reminder-row complete' : 'reminder-row'}>
+    <div className={completed ? 'reminder-row complete' : 'reminder-row'}>
       <input
         type="checkbox"
-        checked={reminder.complete}
+        checked={completed}
         onChange={onToggle}
-        aria-label={`Mark "${reminder.title}" ${reminder.complete ? 'incomplete' : 'complete'}`}
+        aria-label={`Mark "${reminder.title}" ${completed ? 'incomplete' : 'complete'}`}
       />
       <div className="reminder-body">
         <div className="reminder-title">{reminder.title}</div>
         <div className="reminder-meta">
-          {reminder.dueTime ? new Date(reminder.dueTime).toLocaleString() : 'Anytime'}
-          {reminder.repeat !== 'none' && ` · repeats ${reminder.repeat}`}
+          {scheduleLabel(reminder)}
+          {reminder.builtIn && ' · built-in'}
         </div>
       </div>
       <button className="btn btn-danger" onClick={onDelete} aria-label={`Delete ${reminder.title}`}>
-        Delete
+        {reminder.builtIn ? 'Hide' : 'Delete'}
       </button>
     </div>
   );

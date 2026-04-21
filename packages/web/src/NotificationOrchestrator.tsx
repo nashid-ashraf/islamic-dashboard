@@ -3,6 +3,7 @@ import {
   usePrayerTimes,
   useReminders,
   prayerTimeToDate,
+  resolveNextFireAt,
 } from '@islamic-dashboard/shared';
 import type { NotificationPermissionState } from '@islamic-dashboard/shared';
 import { storage } from './services/storage';
@@ -49,16 +50,19 @@ export function NotificationOrchestrator() {
     });
   }, [prayer.data, prayer.nextPrayer, prayer.settings.city, permission]);
 
-  // Upcoming timed reminders
+  // Upcoming reminders — the schedule union is resolved per-reminder. Prayer-anchored
+  // reminders return null from resolveNextFireAt; they are orchestrated separately
+  // against live prayer timings (not yet implemented).
   useEffect(() => {
     notificationScheduler.cancelByPrefix('reminder:');
     if (permission !== 'granted') return;
     const now = Date.now();
     for (const r of reminders) {
-      if (r.complete || r.dueTime === null || r.dueTime <= now) continue;
+      const whenMs = resolveNextFireAt(r, now);
+      if (whenMs === null) continue;
       notificationScheduler.schedule({
         key: `reminder:${r.id}`,
-        whenMs: r.dueTime,
+        whenMs,
         title: r.title,
         body: 'Reminder is due',
       });

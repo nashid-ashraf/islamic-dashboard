@@ -24,3 +24,4 @@ export * from './hooks/useReadingPosition';
 // Utils
 export * from './utils/theme';
 export * from './utils/dateHelpers';
+export * from './utils/reminderSchedule';

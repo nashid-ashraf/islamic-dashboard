@@ -6,6 +6,8 @@ import {
   useReminders,
   PRAYER_NAMES,
   formatHijriDate,
+  isCompletedToday,
+  resolveNextFireAt,
 } from '@islamic-dashboard/shared';
 import type { PrayerName, NotificationPermissionState } from '@islamic-dashboard/shared';
 import { storage } from '../services/storage';
@@ -44,7 +46,7 @@ export default function Dashboard() {
   }
 
   const upcomingReminders = reminders
-    .filter((r) => !r.complete)
+    .filter((r) => r.enabled && !isCompletedToday(r))
     .slice(0, 3);
 
   return (
@@ -146,14 +148,17 @@ export default function Dashboard() {
           )}
           {upcomingReminders.length > 0 && (
             <ul style={{ listStyle: 'none', padding: 0 }}>
-              {upcomingReminders.map((r) => (
-                <li key={r.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                  <div>{r.title}</div>
-                  <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
-                    {r.dueTime ? new Date(r.dueTime).toLocaleString() : 'Anytime'}
-                  </div>
-                </li>
-              ))}
+              {upcomingReminders.map((r) => {
+                const nextFire = resolveNextFireAt(r);
+                return (
+                  <li key={r.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                    <div>{r.title}</div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                      {nextFire ? new Date(nextFire).toLocaleString() : 'Anytime'}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
