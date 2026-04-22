@@ -5,6 +5,7 @@ import { NotificationOrchestrator } from './NotificationOrchestrator';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const QuranReader = lazy(() => import('./pages/QuranReader'));
 const Reminders = lazy(() => import('./pages/Reminders'));
+const AdhkarRoutine = lazy(() => import('./pages/AdhkarRoutine'));
 
 function App() {
   return (
@@ -19,6 +20,9 @@ function App() {
           <NavLink to="/quran" className={({ isActive }) => isActive ? 'tab active' : 'tab'}>
             Quran
           </NavLink>
+          <NavLink to="/adhkar/morning" className={({ isActive }) => isActive ? 'tab active' : 'tab'}>
+            Adhkar
+          </NavLink>
           <NavLink to="/reminders" className={({ isActive }) => isActive ? 'tab active' : 'tab'}>
             Reminders
           </NavLink>
@@ -28,6 +32,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/quran" element={<QuranReader />} />
+              <Route path="/adhkar/:routine" element={<AdhkarRoutine />} />
               <Route path="/reminders" element={<Reminders />} />
             </Routes>
           </Suspense>

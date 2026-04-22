@@ -1,0 +1,42 @@
+{
+  "id": "sleep",
+  "label": "Before Sleep",
+  "curationNote": "Seed bundles the canonical Quran-referenced recitations (Ayat al-Kursi, three Quls, last two ayahs of Al-Baqarah) attested in Bukhari 5017, Bukhari 5010, and Muslim 808. Additional hadith-derived supplications (Bismika Allahumma amutu wa ahya, tasbih 33x, etc.) require license-audited curation before shipping.",
+  "duas": [
+    {
+      "id": "sleep-001",
+      "order": 1,
+      "repetitions": 1,
+      "source": "Quran 2:255 (Ayat al-Kursi) — recited before sleep, see Bukhari 5010",
+      "quranRef": { "surah": 2, "ayahFrom": 255, "ayahTo": 255 }
+    },
+    {
+      "id": "sleep-002",
+      "order": 2,
+      "repetitions": 1,
+      "source": "Quran 2:285-286 (last two ayahs of Al-Baqarah) — sufficient for the one who recites them at night, see Bukhari 5008",
+      "quranRef": { "surah": 2, "ayahFrom": 285, "ayahTo": 286 }
+    },
+    {
+      "id": "sleep-003",
+      "order": 3,
+      "repetitions": 3,
+      "source": "Quran 112 (Al-Ikhlas) — blown into cupped hands and wiped over the body, see Bukhari 5017",
+      "quranRef": { "surah": 112, "ayahFrom": 1, "ayahTo": 4 }
+    },
+    {
+      "id": "sleep-004",
+      "order": 4,
+      "repetitions": 3,
+      "source": "Quran 113 (Al-Falaq) — blown into cupped hands and wiped over the body, see Bukhari 5017",
+      "quranRef": { "surah": 113, "ayahFrom": 1, "ayahTo": 5 }
+    },
+    {
+      "id": "sleep-005",
+      "order": 5,
+      "repetitions": 3,
+      "source": "Quran 114 (An-Nas) — blown into cupped hands and wiped over the body, see Bukhari 5017",
+      "quranRef": { "surah": 114, "ayahFrom": 1, "ayahTo": 6 }
+    }
+  ]
+}

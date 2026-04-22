@@ -1,0 +1,6 @@
+{
+  "id": "waking",
+  "label": "Upon Waking",
+  "curationNote": "Waking-up adhkar are predominantly hadith-derived short phrases (e.g. 'Alhamdulillah alladhi ahyana ba'da ma amatana' — Bukhari 6312). The canonical set is brief (3-4 entries) but all text is editorial, so this file ships empty pending a license-audited curation pass from sunnah.com (CC-BY) or a vetted open dataset. See data/adhkar/LICENSES.md.",
+  "duas": []
+}

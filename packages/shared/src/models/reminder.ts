@@ -22,7 +22,7 @@ export type ReminderSchedule =
   | { kind: 'weekly'; weekdays: Weekday[]; timeOfDay: string | null }
   | { kind: 'prayerAnchor'; anchor: PrayerAnchor };
 
-export type AdhkarRoutine =
+export type AdhkarRoutineId =
   | 'morning'
   | 'evening'
   | 'sleep'
@@ -32,7 +32,7 @@ export type AdhkarRoutine =
 
 export type ReminderAction =
   | { kind: 'quran'; surah: number; ayah?: number }
-  | { kind: 'adhkar'; routine: AdhkarRoutine };
+  | { kind: 'adhkar'; routine: AdhkarRoutineId };
 
 export interface ReminderCompletion {
   /** Local calendar date, formatted `YYYY-MM-DD`. */
