@@ -1,28 +1,75 @@
 {
   "id": "evening",
   "label": "Evening Adhkar",
-  "curationNote": "Seed bundles only Quran-referenced entries. Hadith-derived supplications for evening remembrance require license-audited curation (sunnah.com CC-BY or vetted open dataset).",
+  "curationNote": "Seed ships only the Quran-referenced evening recitations (Ayat al-Kursi + three Quls). All Arabic and translations are bundled inline. Hadith-derived evening supplications require license-audited curation from sunnah.com (CC-BY) or Seen-Arabic MIT. See LICENSES.md.",
   "duas": [
     {
       "id": "evening-001",
       "order": 1,
-      "repetitions": 3,
-      "source": "Quran 112 (Al-Ikhlas) — recited 3 times morning and evening, see Abu Dawud 5082",
-      "quranRef": { "surah": 112, "ayahFrom": 1, "ayahTo": 4 }
+      "repetitions": 1,
+      "source": "Quran 2:255",
+      "quranRef": {
+        "surah": 2,
+        "ayahFrom": 255,
+        "ayahTo": 255
+      },
+      "arabic": "ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ ۚ لَا تَأْخُذُهُۥ سِنَةٌۭ وَلَا نَوْمٌۭ ۚ لَّهُۥ مَا فِى ٱلسَّمَٰوَٰتِ وَمَا فِى ٱلْأَرْضِ ۗ مَن ذَا ٱلَّذِى يَشْفَعُ عِندَهُۥٓ إِلَّا بِإِذْنِهِۦ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَىْءٍۢ مِّنْ عِلْمِهِۦٓ إِلَّا بِمَا شَآءَ ۚ وَسِعَ كُرْسِيُّهُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ ۖ وَلَا يَـُٔودُهُۥ حِفْظُهُمَا ۚ وَهُوَ ٱلْعَلِىُّ ٱلْعَظِيمُ",
+      "translations": {
+        "en-sahih": "Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is [presently] before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.",
+        "en-khattab": "Allah! There is no god ˹worthy of worship˺ except Him, the Ever-Living, All-Sustaining. Neither drowsiness nor sleep overtakes Him. To Him belongs whatever is in the heavens and whatever is on the earth. Who could possibly intercede with Him without His permission? He ˹fully˺ knows what is ahead of them and what is behind them, but no one can grasp any of His knowledge—except what He wills ˹to reveal˺. His Seat encompasses the heavens and the earth, and the preservation of both does not tire Him. For He is the Most High, the Greatest",
+        "bn-muhiuddin": "আল্লাহ ছাড়া অন্য কোন উপাস্য নেই, তিনি জীবিত, সবকিছুর ধারক। তাঁকে তন্দ্রাও স্পর্শ করতে পারে না এবং নিদ্রাও নয়। আসমান ও যমীনে যা কিছু রয়েছে, সবই তাঁর। কে আছ এমন, যে সুপারিশ করবে তাঁর কাছে তাঁর অনুমতি ছাড়া? দৃষ্টির সামনে কিংবা পিছনে যা কিছু রয়েছে সে সবই তিনি জানেন। তাঁর জ্ঞানসীমা থেকে তারা কোন কিছুকেই পরিবেষ্টিত করতে পারে না, কিন্তু যতটুকু তিনি ইচ্ছা করেন। তাঁর সিংহাসন সমস্ত আসমান ও যমীনকে পরিবেষ্টিত করে আছে। আর সেগুলোকে ধারণ করা তাঁর পক্ষে কঠিন নয়। তিনিই সর্বোচ্চ এবং সর্বাপেক্ষা মহান।"
+      }
     },
     {
       "id": "evening-002",
       "order": 2,
       "repetitions": 3,
-      "source": "Quran 113 (Al-Falaq) — recited 3 times morning and evening, see Abu Dawud 5082",
-      "quranRef": { "surah": 113, "ayahFrom": 1, "ayahTo": 5 }
+      "source": "Quran 112",
+      "quranRef": {
+        "surah": 112,
+        "ayahFrom": 1,
+        "ayahTo": 4
+      },
+      "arabic": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ هُوَ ٱللَّهُ أَحَدٌ ۝١ ٱللَّهُ ٱلصَّمَدُ ۝٢ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣ وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ ۝٤",
+      "translations": {
+        "en-sahih": "Say, \"He is Allah, [who is] One, ۝١ Allah, the Eternal Refuge. ۝٢ He neither begets nor is born, ۝٣ Nor is there to Him any equivalent.\" ۝٤",
+        "en-khattab": "Say, ˹O Prophet,˺ “He is Allah—One ˹and Indivisible˺ ۝١ Allah—the Sustainer ˹needed by all˺ ۝٢ He has never had offspring, nor was He born ۝٣ And there is none comparable to Him.” ۝٤",
+        "bn-muhiuddin": "বলুন, তিনি আল্লাহ, এক, ۝١ আল্লাহ অমুখাপেক্ষী, ۝٢ তিনি কাউকে জন্ম দেননি এবং কেউ তাকে জন্ম দেয়নি ۝٣ এবং তার সমতুল্য কেউ নেই। ۝٤"
+      }
     },
     {
       "id": "evening-003",
       "order": 3,
       "repetitions": 3,
-      "source": "Quran 114 (An-Nas) — recited 3 times morning and evening, see Abu Dawud 5082",
-      "quranRef": { "surah": 114, "ayahFrom": 1, "ayahTo": 6 }
+      "source": "Quran 113",
+      "quranRef": {
+        "surah": 113,
+        "ayahFrom": 1,
+        "ayahTo": 5
+      },
+      "arabic": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ ۝١ مِن شَرِّ مَا خَلَقَ ۝٢ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ۝٣ وَمِن شَرِّ ٱلنَّفَّٰثَٰتِ فِى ٱلْعُقَدِ ۝٤ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ۝٥",
+      "translations": {
+        "en-sahih": "Say, \"I seek refuge in the Lord of daybreak ۝١ From the evil of that which He created ۝٢ And from the evil of darkness when it settles ۝٣ And from the evil of the blowers in knots ۝٤ And from the evil of an envier when he envies.\" ۝٥",
+        "en-khattab": "Say, ˹O Prophet,˺ “I seek refuge in the Lord of the daybreak ۝١ from the evil of whatever He has created ۝٢ and from the evil of the night when it grows dark ۝٣ and from the evil of those ˹witches casting spells by˺ blowing onto knots ۝٤ and from the evil of an envier when they envy.” ۝٥",
+        "bn-muhiuddin": "বলুন, আমি আশ্রয় গ্রহণ করছি প্রভাতের পালনকর্তার, ۝١ তিনি যা সৃষ্টি করেছেন, তার অনিষ্ট থেকে, ۝٢ অন্ধকার রাত্রির অনিষ্ট থেকে, যখন তা সমাগত হয়, ۝٣ গ্রন্থিতে ফুঁৎকার দিয়ে জাদুকারিনীদের অনিষ্ট থেকে ۝٤ এবং হিংসুকের অনিষ্ট থেকে যখন সে হিংসা করে। ۝٥"
+      }
+    },
+    {
+      "id": "evening-004",
+      "order": 4,
+      "repetitions": 3,
+      "source": "Quran 114",
+      "quranRef": {
+        "surah": 114,
+        "ayahFrom": 1,
+        "ayahTo": 6
+      },
+      "arabic": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ ۝١ مَلِكِ ٱلنَّاسِ ۝٢ إِلَٰهِ ٱلنَّاسِ ۝٣ مِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ ۝٤ ٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ ۝٥ مِنَ ٱلْجِنَّةِ وَٱلنَّاسِ ۝٦",
+      "translations": {
+        "en-sahih": "Say, \"I seek refuge in the Lord of mankind, ۝١ The Sovereign of mankind. ۝٢ The God of mankind, ۝٣ From the evil of the retreating whisperer - ۝٤ Who whispers [evil] into the breasts of mankind - ۝٥ From among the jinn and mankind.\" ۝٦",
+        "en-khattab": "Say, ˹O Prophet,˺ “I seek refuge in the Lord of humankind ۝١ the Master of humankind ۝٢ the God of humankind ۝٣ from the evil of the lurking whisperer— ۝٤ who whispers into the hearts of humankind— ۝٥ from among jinn and humankind.” ۝٦",
+        "bn-muhiuddin": "বলুন, আমি আশ্রয় গ্রহণ করিতেছি মানুষের পালনকর্তার, ۝١ মানুষের অধিপতির, ۝٢ মানুষের মা’বুদের ۝٣ তার অনিষ্ট থেকে, যে কুমন্ত্রণা দেয় ও আত্নগোপন করে, ۝٤ যে কুমন্ত্রণা দেয় মানুষের অন্তরে ۝٥ জ্বিনের মধ্য থেকে অথবা মানুষের মধ্য থেকে। ۝٦"
+      }
     }
   ]
 }

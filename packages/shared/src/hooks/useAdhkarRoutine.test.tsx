@@ -1,108 +1,80 @@
 import { describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useAdhkarRoutine } from './useAdhkarRoutine';
-import { createMockQuranCorpus } from '../test/mockQuranCorpus';
-import type { EditionSurah } from '../models/quran';
+import { renderHook } from '@testing-library/react';
+import { useAdhkarRoutine, pickTranslation } from './useAdhkarRoutine';
+import type { Dua } from '../models/adhkar';
 
-function editionSurah(number: number, ayahs: { numberInSurah: number; text: string }[]): EditionSurah {
+function stub(translations: Partial<Record<'en-sahih' | 'en-khattab' | 'bn-muhiuddin', string>>): Dua {
   return {
-    meta: {
-      number,
-      name: `s${number}`,
-      englishName: `S${number}`,
-      englishNameTranslation: '',
-      numberOfAyahs: ayahs.length,
-      revelationType: 'Meccan',
-    },
-    ayahs,
+    id: 'x',
+    order: 1,
+    arabic: 'AR',
+    translations,
+    repetitions: 1,
+    source: 'Bukhari 1',
   };
 }
 
 describe('useAdhkarRoutine', () => {
-  it('returns the bundled routine synchronously (no corpus)', () => {
+  it('returns the bundled routine synchronously', () => {
     const { result } = renderHook(() => useAdhkarRoutine('sleep'));
     expect(result.current.routine.id).toBe('sleep');
     expect(result.current.routine.duas.length).toBeGreaterThan(0);
-    // Without a corpus, duas carrying only `quranRef` resolve to null.
-    for (const d of result.current.resolvedDuas) {
-      if (d.quranRef && !d.arabic) {
-        expect(d.resolvedArabicAyahs).toBeNull();
-      }
-    }
-    expect(result.current.resolving).toBe(false);
-  });
-
-  it('resolves quranRef duas from the corpus when present', async () => {
-    const corpus = createMockQuranCorpus({
-      surahs: {
-        'ar-uthmani': new Map([
-          [2, editionSurah(2, [
-            { numberInSurah: 255, text: 'AYAT-AL-KURSI-TEXT' },
-            { numberInSurah: 285, text: 'BAQARAH-285' },
-            { numberInSurah: 286, text: 'BAQARAH-286' },
-          ])],
-          [112, editionSurah(112, [
-            { numberInSurah: 1, text: 'IKHLAS-1' },
-            { numberInSurah: 2, text: 'IKHLAS-2' },
-            { numberInSurah: 3, text: 'IKHLAS-3' },
-            { numberInSurah: 4, text: 'IKHLAS-4' },
-          ])],
-          [113, editionSurah(113, [
-            { numberInSurah: 1, text: 'FALAQ-1' },
-            { numberInSurah: 2, text: 'FALAQ-2' },
-            { numberInSurah: 3, text: 'FALAQ-3' },
-            { numberInSurah: 4, text: 'FALAQ-4' },
-            { numberInSurah: 5, text: 'FALAQ-5' },
-          ])],
-          [114, editionSurah(114, [
-            { numberInSurah: 1, text: 'NAS-1' },
-            { numberInSurah: 2, text: 'NAS-2' },
-            { numberInSurah: 3, text: 'NAS-3' },
-            { numberInSurah: 4, text: 'NAS-4' },
-            { numberInSurah: 5, text: 'NAS-5' },
-            { numberInSurah: 6, text: 'NAS-6' },
-          ])],
-        ]),
-      },
-    });
-
-    const { result } = renderHook(() => useAdhkarRoutine('sleep', { corpus }));
-
-    await waitFor(() => expect(result.current.resolving).toBe(false));
-
-    const ayatAlKursiDua = result.current.resolvedDuas.find(
-      (d) => d.quranRef?.surah === 2 && d.quranRef?.ayahFrom === 255,
-    );
-    expect(ayatAlKursiDua?.resolvedArabicAyahs).toEqual([
-      { ayah: 255, text: 'AYAT-AL-KURSI-TEXT' },
-    ]);
-
-    const baqarahEnd = result.current.resolvedDuas.find(
-      (d) => d.quranRef?.surah === 2 && d.quranRef?.ayahFrom === 285,
-    );
-    expect(baqarahEnd?.resolvedArabicAyahs).toEqual([
-      { ayah: 285, text: 'BAQARAH-285' },
-      { ayah: 286, text: 'BAQARAH-286' },
-    ]);
-  });
-
-  it('returns null for quranRef duas when the corpus is missing that surah', async () => {
-    // Corpus contains nothing — all quranRef lookups miss.
-    const corpus = createMockQuranCorpus();
-    const { result } = renderHook(() => useAdhkarRoutine('sleep', { corpus }));
-    await waitFor(() => expect(result.current.resolving).toBe(false));
-    for (const d of result.current.resolvedDuas) {
-      if (d.quranRef && !d.arabic) {
-        expect(d.resolvedArabicAyahs).toBeNull();
-      }
+    // Every dua has inline Arabic (no async resolution needed).
+    for (const d of result.current.routine.duas) {
+      expect(typeof d.arabic).toBe('string');
+      expect(d.arabic.length).toBeGreaterThan(0);
     }
   });
 
-  it('exposes empty duas arrays for out-of-scope routines (waking, friday-post-asr, post-salah)', () => {
-    for (const id of ['waking', 'friday-post-asr', 'post-salah'] as const) {
+  it('exposes empty duas arrays for out-of-scope routines', () => {
+    for (const id of ['friday-post-asr', 'post-salah'] as const) {
       const { result } = renderHook(() => useAdhkarRoutine(id));
       expect(result.current.routine.duas).toEqual([]);
       expect(result.current.routine.curationNote).toBeTruthy();
     }
+  });
+});
+
+describe('pickTranslation', () => {
+  it('returns the preferred edition when available', () => {
+    const picked = pickTranslation(
+      stub({ 'en-sahih': 'S', 'en-khattab': 'K' }),
+      'en-khattab',
+    );
+    expect(picked).toEqual({ editionId: 'en-khattab', text: 'K', isFallback: false });
+  });
+
+  it('falls back from en-khattab → en-sahih', () => {
+    const picked = pickTranslation(stub({ 'en-sahih': 'S' }), 'en-khattab');
+    expect(picked?.editionId).toBe('en-sahih');
+    expect(picked?.isFallback).toBe(true);
+  });
+
+  it('falls back from en-sahih → en-khattab when Sahih is missing', () => {
+    const picked = pickTranslation(stub({ 'en-khattab': 'K' }), 'en-sahih');
+    expect(picked?.editionId).toBe('en-khattab');
+    expect(picked?.isFallback).toBe(true);
+  });
+
+  it('falls back from bn-muhiuddin → en-sahih cross-language', () => {
+    const picked = pickTranslation(stub({ 'en-sahih': 'S' }), 'bn-muhiuddin');
+    expect(picked?.editionId).toBe('en-sahih');
+    expect(picked?.isFallback).toBe(true);
+  });
+
+  it('returns bn-muhiuddin when available as preferred', () => {
+    const picked = pickTranslation(
+      stub({ 'bn-muhiuddin': 'B', 'en-sahih': 'S' }),
+      'bn-muhiuddin',
+    );
+    expect(picked?.editionId).toBe('bn-muhiuddin');
+    expect(picked?.isFallback).toBe(false);
+  });
+
+  it('returns null when no translation is available in the hierarchy', () => {
+    const empty = stub({});
+    expect(pickTranslation(empty, 'en-sahih')).toBeNull();
+    expect(pickTranslation(empty, 'en-khattab')).toBeNull();
+    expect(pickTranslation(empty, 'bn-muhiuddin')).toBeNull();
   });
 });

@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
 import {
   useAdhkarRoutine,
+  pickTranslation,
   ADHKAR_ROUTINES,
+  TRANSLATION_EDITIONS,
+  EDITIONS,
 } from '@islamic-dashboard/shared';
 import type {
   AdhkarRoutineId,
-  ResolvedDua,
+  Dua,
+  TranslationEditionId,
 } from '@islamic-dashboard/shared';
-import { quranCorpus } from '../services/quranCorpus';
 
 const VALID_ROUTINES: AdhkarRoutineId[] = [
   'morning',
@@ -19,8 +22,18 @@ const VALID_ROUTINES: AdhkarRoutineId[] = [
   'post-salah',
 ];
 
+const PREFERRED_TRANSLATION_KEY = 'adhkar_preferred_translation';
+
 function isValidRoutine(value: string | undefined): value is AdhkarRoutineId {
   return !!value && (VALID_ROUTINES as string[]).includes(value);
+}
+
+function readPreferredTranslation(): TranslationEditionId {
+  const saved = localStorage.getItem(PREFERRED_TRANSLATION_KEY);
+  if (saved && (TRANSLATION_EDITIONS as readonly string[]).includes(saved)) {
+    return saved as TranslationEditionId;
+  }
+  return 'en-sahih';
 }
 
 export default function AdhkarRoutinePage() {
@@ -32,9 +45,14 @@ export default function AdhkarRoutinePage() {
 }
 
 function AdhkarRoutineView({ routineId }: { routineId: AdhkarRoutineId }) {
-  const { routine, resolvedDuas, resolving } = useAdhkarRoutine(routineId, {
-    corpus: quranCorpus,
-  });
+  const { routine } = useAdhkarRoutine(routineId);
+
+  const [preferredTranslation, setPreferredTranslation] = useState<TranslationEditionId>(
+    () => readPreferredTranslation(),
+  );
+  useEffect(() => {
+    localStorage.setItem(PREFERRED_TRANSLATION_KEY, preferredTranslation);
+  }, [preferredTranslation]);
 
   useEffect(() => {
     document.title = `${routine.label} · Islamic Dashboard`;
@@ -55,6 +73,21 @@ function AdhkarRoutineView({ routineId }: { routineId: AdhkarRoutineId }) {
             {ADHKAR_ROUTINES[id].label}
           </Link>
         ))}
+        <label style={{ marginLeft: 'auto', fontSize: '0.85rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          Translation:
+          <select
+            value={preferredTranslation}
+            onChange={(e) => setPreferredTranslation(e.target.value as TranslationEditionId)}
+            style={{ padding: '4px 8px', background: 'var(--background)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6 }}
+            aria-label="Preferred translation"
+          >
+            {TRANSLATION_EDITIONS.map((ed) => (
+              <option key={ed} value={ed}>
+                {EDITIONS[ed].label}
+              </option>
+            ))}
+          </select>
+        </label>
       </nav>
 
       {routine.curationNote && (
@@ -73,32 +106,34 @@ function AdhkarRoutineView({ routineId }: { routineId: AdhkarRoutineId }) {
         </section>
       )}
 
-      {resolving && (
-        <p role="status" aria-live="polite" style={{ color: 'var(--muted)' }}>
-          Resolving Quran references…
-        </p>
-      )}
-
-      {resolvedDuas.length === 0 && !resolving && (
+      {routine.duas.length === 0 && (
         <section className="card" aria-labelledby="empty-heading">
           <h2 id="empty-heading">No adhkar bundled yet for this routine.</h2>
           <p style={{ color: 'var(--muted)' }}>
-            Content curation is pending — see <code>packages/shared/src/data/adhkar/LICENSES.md</code>.
+            Content curation is pending — see{' '}
+            <code>packages/shared/src/data/adhkar/LICENSES.md</code>.
           </p>
         </section>
       )}
 
-      {resolvedDuas.map((d) => (
-        <DuaCard key={d.id} dua={d} />
+      {routine.duas.map((d) => (
+        <DuaCard key={d.id} dua={d} preferredTranslation={preferredTranslation} />
       ))}
     </div>
   );
 }
 
-function DuaCard({ dua }: { dua: ResolvedDua }) {
+function DuaCard({
+  dua,
+  preferredTranslation,
+}: {
+  dua: Dua;
+  preferredTranslation: TranslationEditionId;
+}) {
   const [count, setCount] = useState(0);
   const target = dua.repetitions;
   const done = count >= target;
+  const translation = pickTranslation(dua, preferredTranslation);
 
   return (
     <article className="card" aria-labelledby={`dua-${dua.id}-heading`}>
@@ -111,56 +146,50 @@ function DuaCard({ dua }: { dua: ResolvedDua }) {
         </span>
       </header>
 
-      {dua.resolvedArabicAyahs ? (
-        dua.resolvedArabicAyahs.map((a, i) => (
-          <p
-            key={i}
-            className="ayah-arabic"
-            lang="ar"
-            dir="rtl"
-            style={{ marginBottom: 6 }}
-          >
-            {a.text}
-            {a.ayah > 0 && (
-              <span
-                aria-hidden="true"
-                style={{ fontSize: '0.8rem', color: 'var(--muted)', marginInlineStart: 6 }}
-              >
-                ﴿{a.ayah}﴾
-              </span>
-            )}
-          </p>
-        ))
-      ) : dua.quranRef ? (
-        <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Arabic text will appear when the Quran corpus is downloaded, or{' '}
-          <Link
-            to={`/quran?surah=${dua.quranRef.surah}&ayah=${dua.quranRef.ayahFrom}`}
-            style={{ color: 'var(--accent)' }}
-          >
-            open in Quran reader →
-          </Link>
-        </p>
-      ) : (
-        <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Text pending curation.
+      <p className="ayah-arabic" lang="ar" dir="rtl" style={{ marginBottom: 6 }}>
+        {dua.arabic}
+      </p>
+
+      {dua.transliteration && (
+        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', fontStyle: 'italic', marginBottom: 6 }}>
+          {dua.transliteration}
         </p>
       )}
 
-      {dua.translations?.en && (
-        <p className="ayah-translation" style={{ marginTop: 8 }}>
-          {dua.translations.en}
-        </p>
-      )}
-      {dua.translations?.bn && (
-        <p className="ayah-translation" lang="bn" style={{ marginTop: 4 }}>
-          {dua.translations.bn}
+      {translation ? (
+        <div style={{ marginTop: 8 }}>
+          <p
+            className="ayah-translation"
+            lang={translation.editionId === 'bn-muhiuddin' ? 'bn' : 'en'}
+          >
+            {translation.text}
+          </p>
+          {translation.isFallback && (
+            <p style={{ fontSize: '0.75rem', color: 'var(--muted)', fontStyle: 'italic', marginTop: 4 }}>
+              Showing {EDITIONS[translation.editionId].label} — {EDITIONS[preferredTranslation].label} not available for this dua.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p style={{ color: 'var(--muted)', fontSize: '0.85rem', fontStyle: 'italic', marginTop: 8 }}>
+          Translation pending.
         </p>
       )}
 
       {dua.benefit && (
         <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginTop: 8, fontStyle: 'italic' }}>
           {dua.benefit}
+        </p>
+      )}
+
+      {dua.quranRef && (
+        <p style={{ fontSize: '0.8rem', marginTop: 8 }}>
+          <Link
+            to={`/quran?surah=${dua.quranRef.surah}&ayah=${dua.quranRef.ayahFrom}`}
+            style={{ color: 'var(--accent)' }}
+          >
+            Open in Quran reader →
+          </Link>
         </p>
       )}
 

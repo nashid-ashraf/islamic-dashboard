@@ -434,7 +434,13 @@ Extends §3.3 Custom Reminders with analytics:
 - **FR-EX24: In-app adhkar reader** — tap a routine → see list of its adhkars → each with Arabic / translation / count / tap-to-count tasbih. No audio, no search, no shareable images. Works offline.
 - **FR-EX25: Licensing** — adhkar text is public-domain (Quran / sahih hadith), but transliteration & translation are editorial. Bundled content must attribute source and respect open licensing. Darussalam editions (including Mohiuddin Khan / Abu Bakr Zakaria Bengali translations) are NOT redistributable.
 
-**Scaffold status (2026-04-22, v1.1a):** `packages/shared/src/models/adhkar.ts` + `packages/shared/src/data/adhkar/` landed with 4 routine files (morning, evening, sleep, waking) and `LICENSES.md` documenting provenance rules. Seed data ships **only Quran-referenced duas** (Al-Ikhlas, Al-Falaq, An-Nas, Ayat al-Kursi, last two of Al-Baqarah) — text resolves via `quranRef` → `QuranOfflineCorpus` at render time, so no copyrighted editorial content is bundled. Hadith-derived duas require a follow-up curation pass from sunnah.com (CC-BY) or a license-audited open dataset (e.g. `Seen-Arabic/Morning-And-Evening-Adhkar-DB`, MIT). `useAdhkarRoutine(id, { corpus })` hook + `/adhkar/:routine` route land in the web package; mobile UI follows in Phase 4.
+**Shipped status (2026-04-22, v1.1a):** `packages/shared/src/models/adhkar.ts` + `packages/shared/src/data/adhkar/` with four routine files (morning, evening, sleep, waking) plus `LICENSES.md` and `ADHKAR_INVENTORY.md` (repo root) as the locked curator worklist.
+
+**14 Quran-referenced entries ship with full inline Arabic + three translations** (Sahih International, Mustafa Khattab "The Clear Quran", Bengali Muhiuddin Khan) — populated once via `packages/shared/scripts/populate-quran-text.mjs` from AlQuran.cloud and the fawazahmed0 CDN, then bundled into the JS output. The adhkar reader works fully offline from first app install with no consent prompt or corpus dependency.
+
+**51 hadith-derived entries remain pending** per the locked inventory in `ADHKAR_INVENTORY.md`. Curator pass sources each from sunnah.com (CC-BY 3.0) or Seen-Arabic/Morning-And-Evening-Adhkar-DB (MIT). Bengali for hadith entries is blocked on sourcing — no permissive Bengali Hisnul Muslim corpus has been identified; reader falls back to English via `pickTranslation`.
+
+`useAdhkarRoutine(id)` hook (synchronous, no corpus) + `pickTranslation(dua, preferred)` helper with fallback hierarchy + `/adhkar/:routine` route with per-language selector land in the web package. Mobile UI follows in Phase 4; the bundled JSON is shared unchanged.
 
 - **Supersedes §5A.3** and parts of §5A.5: we no longer need a deep-link contract to Hisnul Muslim; drop open question "does Hisnul Muslim expose a URL scheme?". The Hisnul Muslim *data model* analysis in §5A.5 now informs our **own** data model, not an external integration.
 

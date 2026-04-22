@@ -218,9 +218,10 @@ Platform divergence is handled via `.web.ts` / `.native.ts` / `.ios.ts` / `.andr
 ### Adhkar (daily remembrances)
 - Four routines in a dedicated reader: **morning**, **evening**, **before sleep**, **upon waking**
 - Per-dua tap-to-count tasbih with repetition target (e.g. 3 times, 33 times)
-- `quranRef` integration: duas whose source is a Quranic verse render Arabic from the offline Quran corpus when hydrated, or deep-link into the Quran reader when not
+- User-selectable translation: Sahih International / Mustafa Khattab (The Clear Quran) / Bengali Muhiuddin Khan, persisted across sessions
+- Fully offline from first app install — Arabic and all three translations ship inline in the bundled JSON. No corpus dependency, no consent prompt
 - Bundled data lives at `packages/shared/src/data/adhkar/*.json` — shared verbatim by web and mobile
-- **Content provenance is enforced.** Bundled seeds ship only duas whose text is the Quran (universally public domain); all hadith-derived supplications require license-audited curation per `packages/shared/src/data/adhkar/LICENSES.md`. No Darussalam-licensed translations, transliterations, or hadith wordings are reproduced
+- **Content provenance is enforced.** Quran-referenced entries are populated from permissively-licensed public-domain sources via `packages/shared/scripts/populate-quran-text.mjs`. Hadith-derived entries require license-audited curation per `packages/shared/src/data/adhkar/LICENSES.md`. See `ADHKAR_INVENTORY.md` (repo root) for the locked curator worklist. No Darussalam-licensed translations, transliterations, or hadith wordings are reproduced
 
 ### Offline Quran Corpus (opt-in)
 - One-time consent banner offers to bulk-download the full Quran + translations for offline use
@@ -331,6 +332,7 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 | **Phase 3.3** — Reminder model v1 refactor (schedule union + completions history + built-in catalog field) | Done |
 | **Phase 3.4** — Quran offline corpus port + web IndexedDB adapter (FR-EX19) | Done |
 | **Phase 3.5** — Adhkar scaffold + Quran-reference seeds (FR-EX23–25, v1.1a) | Done |
+| **Phase 3.6** — Adhkar fully-bundled refactor + 4-language Quran-ref content | Done |
 | **Phase 4** — Mobile app (Expo) | Planned |
 | **Phase 5** — CI/CD pipelines | Planned |
 | Production deployment | Planned |
@@ -362,7 +364,7 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 - Post-salah tasbih counter (33×3) — bespoke counter UI
 - Five-salah daily pie chart — reads a new `DailyLog` aggregate
 - Opt-in full Quran + 3 translations offline (shipped — see Phase 3.4)
-- Adhkar routines in-app (scaffolded — Phase 3.5; Quran-reference seeds ship; hadith-derived content needs license-audited curation)
+- Adhkar routines in-app (shipped Phase 3.5 + 3.6 — 14 Quran-referenced entries with full 4-language content bundled inline; 51 hadith-derived entries pending license-audited curation pass)
 - Weekly reminder recap with completion analytics
 
 ### v2 (Future)
