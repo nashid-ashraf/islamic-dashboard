@@ -246,3 +246,52 @@ Hadith-derived duas (most of morning/evening, all of waking-up) are left as expl
 - Hadith-derived adhkar curation for morning/evening/waking-up from an audited source.
 - Bengali adhkar for Quran-referenced duas (free via cached corpus) + separate sourcing for hadith-derived.
 - Adhkar reader per-dua persistence (daily completions, similar to reminders).
+
+---
+
+## Session 8 — Adhkar fully-bundled refactor + 4-language Quran-ref content (2026-04-22)
+
+Two user-driven pivots landed in one commit:
+
+### 1. Inventory lock
+User reviewed `ADHKAR_INVENTORY.md` and issued specific add/drop decisions across the four routines. Final target: 25 morning / 24 evening / 12 sleep / 4 waking = 65 entries. Key drops: old tasbih compilation (moved — user-requested), Surah al-Mulk / as-Sajdah (live as pre-seeded reminders FR-EX7/FR-EX8 per §5A.5b, not adhkar), miswak (behavioral, not a recited dua), several overlapping/duplicate hadith formulae. Key addition: morning-19 supplication (Abu Dawud 5084 "goodness of this day") as the morning counterpart to the evening "goodness of this night" already in the inventory.
+
+### 2. Fully-bundled architecture
+User flagged that the previously-scaffolded `quranRef` → `QuranOfflineCorpus` resolver created an inconsistent user experience — hadith entries worked offline unconditionally, but Quran-referenced entries required the opt-in Quran corpus consent. Fix: collapse the discriminated union, bundle every dua's Arabic and all three translations directly into the JSON, drop the async corpus-resolver path entirely.
+
+### Architectural changes
+- **Model** (`packages/shared/src/models/adhkar.ts`) — single `Dua` interface with required `arabic: string` + required `translations: Partial<Record<TranslationEditionId, string>>` + optional `quranRef` metadata. Discriminated union + `QuranReferencedDua`/`HadithDua` helpers removed.
+- **Hook** (`packages/shared/src/hooks/useAdhkarRoutine.ts`) — synchronous. Returns `{ routine }` directly from the bundled data. No `Promise.all`, no `resolving` state, no corpus parameter. `pickTranslation(dua, preferred)` helper unchanged.
+- **Page** (`packages/web/src/pages/AdhkarRoutine.tsx`) — drops the corpus-not-hydrated fallback UI. Still renders the translation selector (Sahih / Khattab / Bengali), fallback badge, and per-dua tap counter. `quranRef` becomes a per-dua "Open in Quran reader →" deep-link affordance.
+- **Validator** (`packages/shared/src/data/adhkar/adhkar.validate.test.ts`) — drops the XOR invariant check; enforces non-empty `arabic` and ≥1 non-empty translation per dua. Now 82 assertions across 11 shipped entries (was 45 across 11 entries under the old shape).
+
+### Content population
+New one-time Node script `packages/shared/scripts/populate-quran-text.mjs` fetches each Quran-referenced entry's Arabic + three translations from AlQuran.cloud (`quran-uthmani` / `en.sahih` / `bn.bengali`) and the fawazahmed0 JSDelivr CDN (`eng-mustafakhattaba` for Khattab) and writes inline into the JSON. Idempotent — re-run when ayah ranges change. Surah-level caching in the script prevents redundant API calls across entries that reference the same surah.
+
+Ayah separators use Unicode U+06DD (Arabic End of Ayah) with Arabic-Indic digits (۝١ ۝٢ …) between ayahs in multi-ayah entries.
+
+### 14 entries shipped with full 4-language content
+- `morning-001` through `morning-004`: Ayat al-Kursi, Al-Ikhlas, Al-Falaq, An-Nas (3× each per Abu Dawud 5082)
+- `evening-001` through `evening-004`: same
+- `sleep-001` through `sleep-005`: Ayat al-Kursi, Al-Baqarah 285–286, Al-Ikhlas, Al-Falaq, An-Nas (per Bukhari 5008/5010/5017)
+- `waking-002`: last ten ayahs of Aal-Imran (Quran 3:190–200) per Bukhari 4569
+
+All four translations present per entry. No editorial content generated — text came verbatim from the existing public APIs the Quran corpus uses.
+
+### Licensing
+Rewrote `LICENSES.md` with per-entry provenance. Muhiuddin Khan's Quran translation (bundled via AlQuran.cloud for Bengali) is freely redistributable; his **Hisnul Muslim** translation (Darussalam) is separately not redistributable — disambiguation noted explicitly. Khattab "The Clear Quran" flagged as free-for-non-commercial use per The Book Foundation; OK for this open-source project, revisit if it becomes commercial.
+
+### Test coverage
+- 160/160 shared tests passing.
+- `useAdhkarRoutine.test.tsx` simplified to 8 tests (down from 9) — drops corpus-resolution paths, keeps full `pickTranslation` fallback coverage.
+- `adhkar.validate.test.ts` jumps from 45 to 82 assertions — every shipped entry gets a full per-dua structural audit.
+
+### Build impact
+AdhkarRoutine chunk: 3.67 KB gz → 11.54 KB gz (+7.87 KB gz) from inline Arabic + 3 translations × 14 entries. Raw bundle 10.1 KB → 50.2 KB. Precache total 254.94 KB. Acceptable one-time page-load cost for full offline functionality.
+
+### Not done in this pass
+- 51 hadith-derived entries still pending curator pass per `ADHKAR_INVENTORY.md`.
+- `friday-post-asr` and `post-salah` routines remain out of scope for v1.1a.
+- Bengali for hadith entries blocked on sourcing.
+- Adhkar tap-count persistence (counter is ephemeral component state).
+- Mobile UI — shared JSON data + hook work unchanged; the React Native screen lands in Phase 4.
