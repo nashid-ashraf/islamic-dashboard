@@ -203,3 +203,46 @@ IndexedDB store `islamic-dashboard-quran/corpus`. Keys: `quran:surah:{edition}:{
 - Seed `packages/shared/data/builtInReminders.ts` for FR-EX3/4/6/7/8.
 - Prayer-anchored orchestration in `NotificationOrchestrator` (today, `resolveNextFireAt` returns null for `prayerAnchor` by design).
 - Weekly recap aggregator (FR-EX20–22) — projection over `completions[]`.
+
+---
+
+## Session 7 — Adhkar content scaffold (2026-04-22)
+
+Landed the Phase 3.5 / FR-EX23–25 foundation. Adhkar content now has a home in the monorepo and an end-to-end reader UI on web, without bundling any licensed editorial content.
+
+### Design choice driving the whole scaffold
+The Darussalam editions of Hisn al-Muslim (Arabic + English + Bengali translations) are not redistributable. Most "open" online datasets contain laundered Darussalam text. Rather than audit every candidate, the scaffold ships only duas whose Arabic text is **the Quran itself** — universally public domain — and represents them by `quranRef` pointers that resolve against the already-cached `QuranOfflineCorpus`. No translation, transliteration, or hadith-Arabic text is bundled. The reader UI degrades gracefully when the corpus isn't hydrated: it renders a "open in Quran reader →" link instead of broken empty text.
+
+Hadith-derived duas (most of morning/evening, all of waking-up) are left as explicit gaps with a curation note, and `LICENSES.md` documents the approved upstream sources (sunnah.com CC-BY and Seen-Arabic MIT for morning+evening).
+
+### Files added
+- `packages/shared/src/models/adhkar.ts` — `Dua`, `AdhkarRoutine`, `QuranRef`, `LanguageCode` types. The `AdhkarRoutineId` string union moved here (was previously in `reminder.ts`; renamed from `AdhkarRoutine` to free that name for the structured type).
+- `packages/shared/src/data/adhkar/{morning,evening,sleep,waking}.json` — four routine seeds. Morning/evening hold the three Quls (Al-Ikhlas, Al-Falaq, An-Nas) per Abu Dawud 5082. Sleep holds Ayat al-Kursi, last two of Al-Baqarah, and the three Quls per Bukhari 5008/5010/5017. Waking is empty pending curation.
+- `packages/shared/src/data/adhkar/LICENSES.md` — provenance rules, forbidden sources (Darussalam/Mohiuddin Khan/Abu Bakr Zakaria), approved upstream sources (sunnah.com CC-BY, Seen-Arabic MIT, fitrahive MIT), per-entry curation checklist.
+- `packages/shared/src/data/adhkar/index.ts` — typed barrel: `ADHKAR_ROUTINES: Record<AdhkarRoutineId, AdhkarRoutine>` plus `ADHKAR_ROUTINE_IDS`. Out-of-scope routines (`friday-post-asr`, `post-salah`) ship as empty stubs with curation notes so `AdhkarRoutineId` stays exhaustive at the type level.
+- `packages/shared/src/hooks/useAdhkarRoutine.ts` — hook that loads a routine synchronously and, when a `QuranOfflineCorpus` is supplied, asynchronously resolves each `quranRef` against the corpus. Returns `resolvedDuas: ResolvedDua[]` where `resolvedArabicAyahs` is either inline Arabic, corpus-resolved ayahs, or `null`.
+- `packages/shared/src/hooks/useAdhkarRoutine.test.tsx` — 4 tests: no-corpus fallback, full corpus resolution (Ayat al-Kursi + Baqarah 285-286), missing-surah returns null, out-of-scope routines expose empty arrays.
+- `packages/web/src/pages/AdhkarRoutine.tsx` — `/adhkar/:routine` page. Tab navigation between the four routines, curation-note surface when a routine is partial/empty, per-dua cards with repetition counter (`0/3`, `0/33`, etc.). Arabic renders from `resolvedArabicAyahs`, falls back to a Quran-reader deep-link when the corpus is empty.
+
+### Files modified
+- `packages/shared/src/models/reminder.ts` — `AdhkarRoutine` string union renamed to `AdhkarRoutineId`; `ReminderAction.kind === 'adhkar'` still references it.
+- `packages/shared/src/index.ts` — barrel exports for the new model, hook, and `ADHKAR_ROUTINES` registry.
+- `packages/shared/tsconfig.json` — include pattern expanded to `src/**/*.json` so the four JSON files actually compile into the shared project.
+- `packages/web/src/App.tsx` — lazy route `/adhkar/:routine` + an "Adhkar" nav tab that defaults to the morning routine.
+- `REQUIREMENTS.md` §5B.3 — scaffold status note (what ships, what's deferred).
+
+### Verification
+`npm run -w packages/shared test` → 74/74 (+4 adhkar tests). Typecheck + web build clean. AdhkarRoutine route chunk 8.54 KB (gz 3.07 KB); `quranCorpus` got hoisted into its own shared chunk (5.63 KB) once both QuranReader and AdhkarRoutine imported it. Total precache 214 KB.
+
+### Not done in this pass
+- Hadith-derived dua content for morning / evening / waking-up — blocked on license-audited curation.
+- Bengali translation text — blocked on the same curation pass, minus the ~30% of entries that are Quran-referenced and already have Bengali via the cached `bn-muhiuddin` Quran edition (not yet wired into the adhkar reader).
+- `friday-post-asr` and `post-salah` routines — deferred past v1.1a per §5B.3.
+- Mobile UI — shared hook + JSON data work unchanged on Expo; the `AdhkarRoutine` React Native screen lands in Phase 4.
+- Tasbih count persistence — the counter is currently ephemeral component state. Persisting to `completions[]` is a follow-up that aligns with FR-EX2.
+
+### Still open (cumulative — updated)
+- All the Session 6 items above.
+- Hadith-derived adhkar curation for morning/evening/waking-up from an audited source.
+- Bengali adhkar for Quran-referenced duas (free via cached corpus) + separate sourcing for hadith-derived.
+- Adhkar reader per-dua persistence (daily completions, similar to reminders).

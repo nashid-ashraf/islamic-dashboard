@@ -424,15 +424,18 @@ Extends §3.3 Custom Reminders with analytics:
 
 **Reversal of §5A.3 strategy.** Earlier capture assumed deep-link-out to the Hisnul Muslim app. User has clarified: *only the adhkar content* should be imported into this app and work fully offline. The full Hisnul Muslim app (audio, search, categories beyond daily adhkars) is NOT to be reimplemented.
 
-- **FR-EX23: Import adhkar corpus for the daily routines** — bundle into `packages/shared/data/` (or fetched once and cached) the Arabic + transliteration + translation + repetition count for the adhkar categories the dashboard actually surfaces:
+- **FR-EX23: Import adhkar corpus for the daily routines** — bundle into `packages/shared/src/data/adhkar/` the Arabic + translation + repetition count for the adhkar categories the dashboard actually surfaces:
   - Morning adhkar
   - Evening adhkar
   - Before-sleep adhkar
   - Waking-up adhkar
-  - Friday-after-Asr adhkar
-  - Post-salah adhkar (the 33×3 from FR-EX2)
-- **FR-EX24: In-app adhkar reader** — tap a routine → see list of its adhkars → each with Arabic / transliteration / translation / count / tap-to-count tasbih. No audio, no search, no shareable images. Works offline.
-- **FR-EX25: Licensing** — adhkar text is public-domain (Quran / sahih hadith), but transliteration & translation are editorial; import must attribute source and respect any open licensing (e.g. sunnah.com CC-BY, or bundle a known-open dataset like `zekr-org/quran-text`-style). Action: resolve license before importing.
+  - Friday-after-Asr adhkar (deferred to v1.1b)
+  - Post-salah adhkar (deferred to v1.1b — ships alongside FR-EX2 tasbih counter)
+- **FR-EX24: In-app adhkar reader** — tap a routine → see list of its adhkars → each with Arabic / translation / count / tap-to-count tasbih. No audio, no search, no shareable images. Works offline.
+- **FR-EX25: Licensing** — adhkar text is public-domain (Quran / sahih hadith), but transliteration & translation are editorial. Bundled content must attribute source and respect open licensing. Darussalam editions (including Mohiuddin Khan / Abu Bakr Zakaria Bengali translations) are NOT redistributable.
+
+**Scaffold status (2026-04-22, v1.1a):** `packages/shared/src/models/adhkar.ts` + `packages/shared/src/data/adhkar/` landed with 4 routine files (morning, evening, sleep, waking) and `LICENSES.md` documenting provenance rules. Seed data ships **only Quran-referenced duas** (Al-Ikhlas, Al-Falaq, An-Nas, Ayat al-Kursi, last two of Al-Baqarah) — text resolves via `quranRef` → `QuranOfflineCorpus` at render time, so no copyrighted editorial content is bundled. Hadith-derived duas require a follow-up curation pass from sunnah.com (CC-BY) or a license-audited open dataset (e.g. `Seen-Arabic/Morning-And-Evening-Adhkar-DB`, MIT). `useAdhkarRoutine(id, { corpus })` hook + `/adhkar/:routine` route land in the web package; mobile UI follows in Phase 4.
+
 - **Supersedes §5A.3** and parts of §5A.5: we no longer need a deep-link contract to Hisnul Muslim; drop open question "does Hisnul Muslim expose a URL scheme?". The Hisnul Muslim *data model* analysis in §5A.5 now informs our **own** data model, not an external integration.
 
 ---

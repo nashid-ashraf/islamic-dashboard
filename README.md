@@ -123,12 +123,13 @@ sequenceDiagram
 islamic-dashboard/
 ├── packages/
 │   ├── shared/                     # ~80% of code — shared across all platforms
-│   │   ├── api/                    # Aladhan + AlQuran Cloud API clients + httpClient (caching/timeout)
-│   │   ├── models/                 # TypeScript interfaces (Prayer, Surah, Ayah, Reminder)
-│   │   ├── hooks/                  # React hooks (useQuran, usePrayerTimes, useReminders, ...)
+│   │   ├── api/                    # Aladhan + AlQuran Cloud + fawazahmed0 CDN clients + httpClient (caching/timeout)
+│   │   ├── data/                   # Bundled static content (adhkar JSON + LICENSES.md)
+│   │   ├── models/                 # TypeScript interfaces (Prayer, Surah, Ayah, Reminder, Adhkar, Editions)
+│   │   ├── hooks/                  # React hooks (useQuran, usePrayerTimes, useReminders, useAdhkarRoutine, ...)
 │   │   ├── ports/                  # Platform-agnostic interfaces: StorageService,
-│   │   │                           #   NotificationScheduler, GeolocationProvider
-│   │   └── utils/                  # Date helpers, prayer-time parsing, theme tokens
+│   │   │                           #   NotificationScheduler, GeolocationProvider, QuranOfflineCorpus
+│   │   └── utils/                  # Date helpers, prayer-time parsing, theme tokens, reminder schedule resolver
 │   ├── mobile/                     # Expo app (iOS + Android) — Phase 4
 │   │   └── src/services/           # Port implementations: expo-sqlite / expo-notifications / expo-location
 │   └── web/                        # Vite + React PWA
@@ -213,6 +214,13 @@ Platform divergence is handled via `.web.ts` / `.native.ts` / `.ios.ts` / `.andr
 - Action deep-links (`quran` / `adhkar`) — reminders can point at an in-app surface, not just show text
 - Pre-seeded catalog support (`builtIn: true`) — ships default reminders the user can toggle but not delete (catalog seed pending)
 - **Timed push notifications** — next-fire time resolved by a pure `resolveNextFireAt(reminder, now)` helper shared between the UI sort and the notification orchestrator
+
+### Adhkar (daily remembrances)
+- Four routines in a dedicated reader: **morning**, **evening**, **before sleep**, **upon waking**
+- Per-dua tap-to-count tasbih with repetition target (e.g. 3 times, 33 times)
+- `quranRef` integration: duas whose source is a Quranic verse render Arabic from the offline Quran corpus when hydrated, or deep-link into the Quran reader when not
+- Bundled data lives at `packages/shared/src/data/adhkar/*.json` — shared verbatim by web and mobile
+- **Content provenance is enforced.** Bundled seeds ship only duas whose text is the Quran (universally public domain); all hadith-derived supplications require license-audited curation per `packages/shared/src/data/adhkar/LICENSES.md`. No Darussalam-licensed translations, transliterations, or hadith wordings are reproduced
 
 ### Offline Quran Corpus (opt-in)
 - One-time consent banner offers to bulk-download the full Quran + translations for offline use
@@ -322,6 +330,7 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 | **Phase 3.2** — Vitest suite + GitHub Actions CI | Done |
 | **Phase 3.3** — Reminder model v1 refactor (schedule union + completions history + built-in catalog field) | Done |
 | **Phase 3.4** — Quran offline corpus port + web IndexedDB adapter (FR-EX19) | Done |
+| **Phase 3.5** — Adhkar scaffold + Quran-reference seeds (FR-EX23–25, v1.1a) | Done |
 | **Phase 4** — Mobile app (Expo) | Planned |
 | **Phase 5** — CI/CD pipelines | Planned |
 | Production deployment | Planned |
@@ -352,8 +361,8 @@ The prototype demonstrates the core flow: prayer times + Quran reader + custom r
 - 18 expanded daily-practice requirements (FR-EX1–FR-EX18) — most land as pre-seeded reminders once the catalog seed ships
 - Post-salah tasbih counter (33×3) — bespoke counter UI
 - Five-salah daily pie chart — reads a new `DailyLog` aggregate
-- Opt-in full Quran + 3 translations offline (scaffolded — see Phase 3.4)
-- Hisnul Muslim adhkar corpus imported in-app (licensing audit pending)
+- Opt-in full Quran + 3 translations offline (shipped — see Phase 3.4)
+- Adhkar routines in-app (scaffolded — Phase 3.5; Quran-reference seeds ship; hadith-derived content needs license-audited curation)
 - Weekly reminder recap with completion analytics
 
 ### v2 (Future)

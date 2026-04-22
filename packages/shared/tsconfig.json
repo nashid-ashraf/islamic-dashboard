@@ -6,6 +6,6 @@
     "composite": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/**/*.json"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"]
 }

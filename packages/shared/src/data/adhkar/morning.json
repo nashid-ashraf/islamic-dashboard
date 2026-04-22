@@ -1,0 +1,28 @@
+{
+  "id": "morning",
+  "label": "Morning Adhkar",
+  "curationNote": "Seed bundles only Quran-referenced entries recited morning and evening per sahih hadith (Abu Dawud 5082, Tirmidhi 3575). Additional hadith-derived supplications (e.g. Sayyid al-Istighfar, La ilaha illa Allah wahdahu) require curation from sunnah.com (CC-BY) or a license-audited open dataset before shipping. Translations for these entries must be drawn from permissive sources, not Darussalam editions.",
+  "duas": [
+    {
+      "id": "morning-001",
+      "order": 1,
+      "repetitions": 3,
+      "source": "Quran 112 (Al-Ikhlas) — recited 3 times morning and evening, see Abu Dawud 5082",
+      "quranRef": { "surah": 112, "ayahFrom": 1, "ayahTo": 4 }
+    },
+    {
+      "id": "morning-002",
+      "order": 2,
+      "repetitions": 3,
+      "source": "Quran 113 (Al-Falaq) — recited 3 times morning and evening, see Abu Dawud 5082",
+      "quranRef": { "surah": 113, "ayahFrom": 1, "ayahTo": 5 }
+    },
+    {
+      "id": "morning-003",
+      "order": 3,
+      "repetitions": 3,
+      "source": "Quran 114 (An-Nas) — recited 3 times morning and evening, see Abu Dawud 5082",
+      "quranRef": { "surah": 114, "ayahFrom": 1, "ayahTo": 6 }
+    }
+  ]
+}
