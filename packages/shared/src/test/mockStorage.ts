@@ -57,6 +57,7 @@ export function createMockStorage(initial?: {
     async updateReminder(r: Reminder) {
       const idx = state.reminders.findIndex((x) => x.id === r.id);
       if (idx !== -1) state.reminders[idx] = r;
+      else state.reminders.push(r);
     },
     async deleteReminder(id: string) {
       state.reminders = state.reminders.filter((r) => r.id !== id);

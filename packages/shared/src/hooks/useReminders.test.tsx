@@ -4,6 +4,10 @@ import { useReminders } from './useReminders';
 import { createMockStorage } from '../test/mockStorage';
 import { localDateKey } from '../models/reminder';
 import type { Reminder, ReminderSchedule } from '../models/reminder';
+import {
+  BUILT_IN_REMINDERS,
+  BUILT_IN_REMINDER_IDS,
+} from '../data/builtInReminders';
 
 // Use real time; tests derive "today" dynamically so they stay valid across dates.
 const TODAY = localDateKey();
@@ -26,8 +30,13 @@ function reminder(overrides: Partial<Reminder>): Reminder {
   };
 }
 
+/** Drops built-in catalog seeds; lets us assert against just the user's own data. */
+function userOnly(rs: Reminder[]): Reminder[] {
+  return rs.filter((r) => !r.builtIn);
+}
+
 describe('useReminders', () => {
-  it('loads, sorts, and exposes reminders from storage', async () => {
+  it('loads, sorts, and exposes user reminders from storage (alongside the catalog seed)', async () => {
     const now = Date.now();
     const storage = createMockStorage({
       reminders: [
@@ -45,8 +54,12 @@ describe('useReminders', () => {
     const { result } = renderHook(() => useReminders(storage));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // Expected order: incomplete-timed (soonest first), incomplete-untimed, completed-today
-    expect(result.current.reminders.map((r) => r.id)).toEqual(['a', 'b', 'd', 'c']);
+    // Catalog seeds are present alongside user data.
+    expect(result.current.reminders.length).toBe(4 + BUILT_IN_REMINDERS.length);
+
+    // User-only ordering matches the original spec: incomplete-timed (soonest first),
+    // incomplete-untimed, completed-today.
+    expect(userOnly(result.current.reminders).map((r) => r.id)).toEqual(['a', 'b', 'd', 'c']);
   });
 
   it('migrates v0 records on load and exposes them as v1', async () => {
@@ -67,14 +80,15 @@ describe('useReminders', () => {
     const { result } = renderHook(() => useReminders(storage));
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.reminders).toHaveLength(1);
-    const r = result.current.reminders[0];
+    const users = userOnly(result.current.reminders);
+    expect(users).toHaveLength(1);
+    const r = users[0];
     expect(r.version).toBe(1);
     expect(r.schedule).toEqual({ kind: 'once', dueTime: now + 60_000 });
     expect(r.completions).toEqual([]);
   });
 
-  it('adds a new reminder, persists it, and re-sorts', async () => {
+  it('adds a new reminder, persists it, and exposes it next to the catalog', async () => {
     const storage = createMockStorage();
     const { result } = renderHook(() => useReminders(storage));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -87,17 +101,19 @@ describe('useReminders', () => {
       });
     });
 
-    expect(result.current.reminders).toHaveLength(1);
-    expect(result.current.reminders[0]).toMatchObject({
+    const users = userOnly(result.current.reminders);
+    expect(users).toHaveLength(1);
+    expect(users[0]).toMatchObject({
       title: 'Read 1 page of Quran',
       version: 1,
       builtIn: false,
       enabled: true,
     });
+    // Catalog seeds remain virtual until touched — only the user reminder hit storage.
     expect(storage.state.reminders).toHaveLength(1);
   });
 
-  it('toggles today`s completion on and pushes to the end of the list', async () => {
+  it('toggles today`s completion on and pushes to the end of the user-visible list', async () => {
     const now = Date.now();
     const storage = createMockStorage({
       reminders: [
@@ -112,7 +128,7 @@ describe('useReminders', () => {
       await result.current.toggleComplete('a');
     });
 
-    const ids = result.current.reminders.map((r) => r.id);
+    const ids = userOnly(result.current.reminders).map((r) => r.id);
     expect(ids).toEqual(['b', 'a']);
     const a = result.current.reminders.find((r) => r.id === 'a')!;
     expect(a.completions).toHaveLength(1);
@@ -151,30 +167,81 @@ describe('useReminders', () => {
       reminders: [reminder({ id: 'x', title: 'Delete me' })],
     });
     const { result } = renderHook(() => useReminders(storage));
-    await waitFor(() => expect(result.current.reminders).toHaveLength(1));
+    await waitFor(() => expect(userOnly(result.current.reminders)).toHaveLength(1));
 
     await act(async () => {
       await result.current.deleteReminder('x');
     });
 
-    expect(result.current.reminders).toHaveLength(0);
+    expect(userOnly(result.current.reminders)).toHaveLength(0);
     expect(storage.state.reminders).toHaveLength(0);
   });
 
-  it('soft-disables a built-in reminder instead of hard-deleting it', async () => {
-    const storage = createMockStorage({
-      reminders: [reminder({ id: 'seed', title: 'Morning adhkar', builtIn: true })],
-    });
-    const { result } = renderHook(() => useReminders(storage));
-    await waitFor(() => expect(result.current.reminders).toHaveLength(1));
+  describe('built-in catalog integration', () => {
+    it('seeds the full catalog on a cold install', async () => {
+      const storage = createMockStorage();
+      const { result } = renderHook(() => useReminders(storage));
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-    await act(async () => {
-      await result.current.deleteReminder('seed');
+      const ids = result.current.reminders.map((r) => r.id);
+      for (const seed of BUILT_IN_REMINDERS) {
+        expect(ids).toContain(seed.id);
+      }
+      // Storage is untouched — catalog seeds are virtual until first mutation.
+      expect(storage.state.reminders).toHaveLength(0);
     });
 
-    expect(result.current.reminders).toHaveLength(1);
-    expect(result.current.reminders[0].enabled).toBe(false);
-    expect(storage.state.reminders).toHaveLength(1);
-    expect(storage.state.reminders[0].enabled).toBe(false);
+    it('persists the first toggleComplete on a built-in via upsert', async () => {
+      const storage = createMockStorage();
+      const { result } = renderHook(() => useReminders(storage));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      const target = BUILT_IN_REMINDERS[0];
+
+      await act(async () => {
+        await result.current.toggleComplete(target.id);
+      });
+
+      const inState = result.current.reminders.find((r) => r.id === target.id)!;
+      expect(inState.completions).toHaveLength(1);
+      const inStorage = storage.state.reminders.find((r) => r.id === target.id);
+      expect(inStorage).toBeDefined();
+      expect(inStorage!.completions).toHaveLength(1);
+    });
+
+    it('soft-disables a built-in via deleteReminder (first touch persists via upsert)', async () => {
+      const storage = createMockStorage();
+      const { result } = renderHook(() => useReminders(storage));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      const target = BUILT_IN_REMINDERS[0];
+
+      await act(async () => {
+        await result.current.deleteReminder(target.id);
+      });
+
+      const inState = result.current.reminders.find((r) => r.id === target.id);
+      expect(inState).toBeDefined();
+      expect(inState!.enabled).toBe(false);
+      const inStorage = storage.state.reminders.find((r) => r.id === target.id);
+      expect(inStorage).toBeDefined();
+      expect(inStorage!.enabled).toBe(false);
+    });
+
+    it('reload preserves user state on built-ins; catalog still owns title/schedule', async () => {
+      const storage = createMockStorage();
+      const target = BUILT_IN_REMINDERS[1];
+
+      const first = renderHook(() => useReminders(storage));
+      await waitFor(() => expect(first.result.current.loading).toBe(false));
+      await act(async () => {
+        await first.result.current.toggleComplete(target.id);
+      });
+
+      const reloaded = renderHook(() => useReminders(storage));
+      await waitFor(() => expect(reloaded.result.current.loading).toBe(false));
+      const r = reloaded.result.current.reminders.find((x) => x.id === target.id)!;
+      expect(r.completions).toHaveLength(1);
+      expect(r.title).toBe(target.title);
+      expect(BUILT_IN_REMINDER_IDS.has(r.id)).toBe(true);
+    });
   });
 });

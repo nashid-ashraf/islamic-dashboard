@@ -4,6 +4,7 @@ import { isCompletedToday, localDateKey, migrateReminders } from '../models/remi
 import type { StorageService } from '../ports/storage';
 import { generateId } from '../utils/dateHelpers';
 import { resolveNextFireAt } from '../utils/reminderSchedule';
+import { mergeWithBuiltInCatalog } from '../data/builtInReminders';
 
 export interface RemindersState {
   reminders: Reminder[];
@@ -47,8 +48,10 @@ export function useReminders(storage: StorageService): RemindersState & Reminder
   useEffect(() => {
     storage.getReminders().then((saved) => {
       // Storage is the trust boundary; migrate defensively in case any adapter
-      // returns legacy records directly.
-      setReminders(sortReminders(migrateReminders(saved)));
+      // returns legacy records directly. Then merge with the built-in catalog so
+      // pre-seeded reminders surface even on a fresh install.
+      const merged = mergeWithBuiltInCatalog(migrateReminders(saved));
+      setReminders(sortReminders(merged));
       setLoading(false);
     });
   }, [storage]);
@@ -78,27 +81,26 @@ export function useReminders(storage: StorageService): RemindersState & Reminder
 
   const toggleComplete = useCallback(
     async (id: string): Promise<void> => {
+      // Compute the next reminder synchronously from the current closure state.
+      // Don't pull the new reminder out of a setState updater — React 18 may
+      // defer the updater past the storage write, dropping the persistence side
+      // effect on the floor.
+      const target = reminders.find((r) => r.id === id);
+      if (!target) return;
       const now = Date.now();
       const todayKey = localDateKey(now);
-      let toPersist: Reminder | null = null;
+      const alreadyDone = target.completions.some((c) => c.date === todayKey);
+      const completions = alreadyDone
+        ? target.completions.filter((c) => c.date !== todayKey)
+        : [...target.completions, { date: todayKey, completedAt: now }];
+      const next: Reminder = { ...target, completions, updatedAt: now };
 
-      setReminders((prev) => {
-        const updated = prev.map((r) => {
-          if (r.id !== id) return r;
-          const alreadyDone = r.completions.some((c) => c.date === todayKey);
-          const completions = alreadyDone
-            ? r.completions.filter((c) => c.date !== todayKey)
-            : [...r.completions, { date: todayKey, completedAt: now }];
-          const next: Reminder = { ...r, completions, updatedAt: now };
-          toPersist = next;
-          return next;
-        });
-        return sortReminders(updated, now);
-      });
-
-      if (toPersist) await storage.updateReminder(toPersist);
+      await storage.updateReminder(next);
+      setReminders((prev) =>
+        sortReminders(prev.map((r) => (r.id === id ? next : r)), now),
+      );
     },
-    [storage],
+    [reminders, storage],
   );
 
   const deleteReminder = useCallback(
