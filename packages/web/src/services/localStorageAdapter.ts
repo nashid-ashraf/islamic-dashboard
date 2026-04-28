@@ -72,10 +72,9 @@ export class LocalStorageAdapter implements StorageService {
   async updateReminder(reminder: Reminder): Promise<void> {
     const reminders = await this.getReminders();
     const idx = reminders.findIndex((r) => r.id === reminder.id);
-    if (idx !== -1) {
-      reminders[idx] = reminder;
-      setItem(KEYS.reminders, reminders);
-    }
+    if (idx !== -1) reminders[idx] = reminder;
+    else reminders.push(reminder);
+    setItem(KEYS.reminders, reminders);
   }
 
   async deleteReminder(id: string): Promise<void> {

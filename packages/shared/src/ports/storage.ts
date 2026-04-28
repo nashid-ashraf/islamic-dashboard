@@ -19,6 +19,12 @@ export interface StorageService {
   // Reminders
   getReminders(): Promise<Reminder[]>;
   saveReminder(reminder: Reminder): Promise<void>;
+  /**
+   * Upsert: replaces an existing record by id, or inserts if absent. The insert
+   * branch is used the first time a built-in catalog reminder is mutated — its
+   * baseline lives in code, not storage, so the first toggle has nothing to
+   * update against.
+   */
   updateReminder(reminder: Reminder): Promise<void>;
   deleteReminder(id: string): Promise<void>;
 
