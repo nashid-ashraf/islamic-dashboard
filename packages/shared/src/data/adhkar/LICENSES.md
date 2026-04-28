@@ -27,6 +27,33 @@ Format: `dua-id | source | Arabic | en-sahih | en-khattab | bn-muhiuddin | Fetch
 | morning-003 | Quran 113 (Al-Falaq) | PD | same | same | same |
 | morning-004 | Quran 114 (An-Nas) | PD | same | same | same |
 
+### Morning (`morning.json`) — Hadith-derived
+
+For all hadith-derived morning entries: Arabic is public-domain (hadith narration, recorded since the 9th century); en-sahih is taken verbatim from sunnah.com under CC-BY 3.0 (USC-MSA Center); en-khattab and bn-muhiuddin are absent (Khattab translates Quran only; no permissively-licensed Bengali source identified for hadith adhkar).
+
+| Dua ID | Source | sunnah.com URL |
+|--------|--------|----------------|
+| morning-005 | Muslim 2723 — Asbahna wa asbaha al-mulku lillah | https://sunnah.com/muslim:2723 |
+| morning-006 | Bukhari 6306 — Sayyid al-Istighfar | https://sunnah.com/bukhari:6306 |
+| morning-007 | Abu Dawud 5068 — Allahumma bika asbahna | https://sunnah.com/abudawud:5068 |
+| morning-008 | Abu Dawud 5072 — Radhitu billahi Rabban | https://sunnah.com/abudawud:5072 |
+| morning-009 | Abu Dawud 5074 — Allahumma inni as'aluka al-'afwa wa'l-'afiyah | https://sunnah.com/abudawud:5074 |
+| morning-010 | Abu Dawud 5090 — Allahumma 'afini fi badani | https://sunnah.com/abudawud:5090 |
+| morning-011 | Abu Dawud 5081 — Hasbiya Allahu la ilaha illa huwa | https://sunnah.com/abudawud:5081 |
+| morning-012 | Muslim 2708 — A'udhu bi kalimat Allah at-tammat min sharri ma khalaq | https://sunnah.com/muslim:2708 |
+| morning-013 | Abu Dawud 5088 — Bismillah alladhi la yadurru | https://sunnah.com/abudawud:5088 |
+| morning-014 | Tabarani — Allahumma salli wa sallim ala nabiyyina Muhammad | (no sunnah.com URL — see classical compilations such as al-Mu'jam al-Awsat) |
+| morning-015 | Muslim 2692 — Subhan Allah wa bi-hamdihi (100×) | https://sunnah.com/muslim:2692 |
+| morning-016 | Bukhari 6403 — La ilaha illa Allah wahdahu (100×) | https://sunnah.com/bukhari:6403 |
+| morning-017 | Muslim 2726 — Subhan Allah wa bi-hamdihi adada khalqih | https://sunnah.com/muslim:2726 |
+| morning-018 | Ibn Majah 925 — Allahumma inni as'aluka 'ilman nafi'an | https://sunnah.com/ibnmajah:925 |
+| morning-019 | Abu Dawud 5084 — Allahumma inni as'aluka khayra hadha al-yawm | https://sunnah.com/abudawud:5084 |
+| morning-020 | Bukhari 6307 — Astaghfir Allah wa atubu ilayh (100×) | https://sunnah.com/bukhari:6307 |
+| morning-021 | Abu Dawud 5073 — Allahumma ma asbaha bi min ni'matin | https://sunnah.com/abudawud:5073 |
+| morning-022 | al-Hakim 1870 — Ya Hayyu ya Qayyum | (al-Mustadrak; not indexed on sunnah.com — see al-Hakim's al-Mustadrak ʿalā al-Ṣaḥīḥayn) |
+| morning-023 | Abu Dawud 3627 — Hasbuna Allah wa ni'ma'l-wakil | https://sunnah.com/abudawud:3627 |
+| morning-024 | Bukhari 6384 — La hawla wa la quwwata illa billah | https://sunnah.com/bukhari:6384 |
+
 ### Evening (`evening.json`) — Quran-referenced
 
 | Dua ID | Source | Arabic | en-sahih | en-khattab | bn-muhiuddin |
@@ -35,6 +62,31 @@ Format: `dua-id | source | Arabic | en-sahih | en-khattab | bn-muhiuddin | Fetch
 | evening-002 | Quran 112 | PD | same | same | same |
 | evening-003 | Quran 113 | PD | same | same | same |
 | evening-004 | Quran 114 | PD | same | same | same |
+
+### Evening (`evening.json`) — Hadith-derived
+
+Same licensing as morning hadith section (Arabic PD, en-sahih CC-BY via sunnah.com, no Khattab/Bengali for hadith).
+
+| Dua ID | Source | sunnah.com URL |
+|--------|--------|----------------|
+| evening-005 | Muslim 2723 — Amsayna wa amsa al-mulku lillah | https://sunnah.com/muslim:2723 |
+| evening-006 | Bukhari 6306 — Sayyid al-Istighfar (evening instance) | https://sunnah.com/bukhari:6306 |
+| evening-007 | Abu Dawud 5068 — Allahumma bika amsayna | https://sunnah.com/abudawud:5068 |
+| evening-008 | Abu Dawud 5072 — Radhitu billahi Rabban | https://sunnah.com/abudawud:5072 |
+| evening-009 | Abu Dawud 5074 — Allahumma inni as'aluka al-'afwa wa'l-'afiyah | https://sunnah.com/abudawud:5074 |
+| evening-010 | Abu Dawud 5090 — Allahumma 'afini fi badani | https://sunnah.com/abudawud:5090 |
+| evening-011 | Abu Dawud 5081 — Hasbiya Allahu la ilaha illa huwa | https://sunnah.com/abudawud:5081 |
+| evening-012 | Muslim 2708 — A'udhu bi kalimat Allah at-tammat | https://sunnah.com/muslim:2708 |
+| evening-013 | Abu Dawud 5088 — Bismillah alladhi la yadurru | https://sunnah.com/abudawud:5088 |
+| evening-014 | Tabarani — Allahumma salli wa sallim ala nabiyyina Muhammad | (no sunnah.com URL) |
+| evening-015 | Muslim 2692 — Subhan Allah wa bi-hamdihi (100×) | https://sunnah.com/muslim:2692 |
+| evening-016 | Muslim 2692 — La ilaha illa Allah wahdahu (100×) | https://sunnah.com/muslim:2692 |
+| evening-017 | Abu Dawud 5077 — La ilaha illa Allah wahdahu (10× evening) | https://sunnah.com/abudawud:5077 |
+| evening-018 | Muslim 2726 — Subhan Allah wa bi-hamdihi adada khalqih | https://sunnah.com/muslim:2726 |
+| evening-019 | Abu Dawud 5084 — Allahumma inni as'aluka khayra hadhihi al-laylah | https://sunnah.com/abudawud:5084 |
+| evening-020 | Bukhari 6307 — Astaghfir Allah wa atubu ilayh (100×) | https://sunnah.com/bukhari:6307 |
+| evening-023 | al-Hakim 1870 — Ya Hayyu ya Qayyum | (al-Mustadrak; not indexed on sunnah.com) |
+| evening-024 | Abu Dawud 3893 — A'udhu bi kalimat Allah at-tammat min ghadabihi | https://sunnah.com/abudawud:3893 |
 
 ### Sleep (`sleep.json`) — Quran-referenced
 
@@ -46,13 +98,27 @@ Format: `dua-id | source | Arabic | en-sahih | en-khattab | bn-muhiuddin | Fetch
 | sleep-004 | Quran 113 | PD | same | same | same |
 | sleep-005 | Quran 114 | PD | same | same | same |
 
-### Upon Waking (`waking.json`) — Quran-referenced
+### Sleep (`sleep.json`) — Hadith-derived
 
-| Dua ID | Source | Arabic | en-sahih | en-khattab | bn-muhiuddin |
-|--------|--------|--------|----------|------------|--------------|
-| waking-002 | Quran 3:190-200 | PD | Sahih Intl via AlQuran.cloud | Khattab via fawazahmed0 CDN | Muhiuddin Khan via AlQuran.cloud |
+| Dua ID | Source | sunnah.com URL |
+|--------|--------|----------------|
+| sleep-006 | Bukhari 6324 — Bismika Allahumma amutu wa ahya | https://sunnah.com/bukhari:6324 |
+| sleep-007 | Bukhari 6313 — Allahumma aslamtu nafsi ilayk | https://sunnah.com/bukhari:6313 |
+| sleep-009 | Abu Dawud 5045 — Allahumma qini adhabaka yawma tab'athu ibadak | https://sunnah.com/abudawud:5045 |
+| sleep-010 | Bukhari 6320 — Bismika rabbi wada'tu janbi | https://sunnah.com/bukhari:6320 |
+| sleep-011 | Abu Dawud 5053 — Al-hamdu lillahi alladhi at'amana wa saqana | https://sunnah.com/abudawud:5053 |
+| sleep-012 | Muslim 2708 — A'udhu bi kalimat Allah at-tammat | https://sunnah.com/muslim:2708 |
 
-**Text populated by:** `packages/shared/scripts/populate-quran-text.mjs`. Re-run this script whenever ayah ranges change or a new Quran-referenced entry is added.
+### Upon Waking (`waking.json`)
+
+| Dua ID | Source | sunnah.com URL |
+|--------|--------|----------------|
+| waking-001 | Bukhari 6312 — Al-hamdu lillahi alladhi ahyana | https://sunnah.com/bukhari:6312 |
+| waking-002 | Quran 3:190-200 | PD; Sahih + Khattab + Bengali via the Quran sources above |
+| waking-003 | Bukhari 1154 — Night-waking dhikr | https://sunnah.com/bukhari:1154 |
+| waking-004 | Tirmidhi 3401 — Al-hamdu lillahi alladhi 'afani fi jasadi | https://sunnah.com/tirmidhi:3401 |
+
+**Text populated by:** Quran-referenced entries via `packages/shared/scripts/populate-quran-text.mjs`. Hadith-derived entries hand-curated against sunnah.com URLs above. Re-run the populate script whenever Quran ayah ranges change or a new Quran-referenced entry is added.
 
 ## Rules for adding hadith-derived entries (future curator passes)
 
