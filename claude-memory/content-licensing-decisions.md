@@ -14,3 +14,5 @@ Resolved verdicts:
 - Adhkar (65 entries) shipped; fonts on SIL OFL. Forbidden: Darussalam Hisnul Muslim, unlicensed datasets. Muhiuddin Khan's *Quran* translation is free (used); his *Hisnul Muslim* is Darussalam (forbidden) — do not conflate.
 
 Commercial release voids the NC-only grants (Khattab; re-verify Sahih International) — see the commercial-release checklist in `LICENSES.md`. Relates to [[requirements-intake-workflow]] (FR-EX34/EX37 live in `SCATTERED_REQUIREMENTS.md`).
+
+**To resume this work:** start from repo-root `CONTENT_TODO.md` — the handoff doc listing what's DECIDED, the 3 OPEN product decisions (tafsir A/B/C; commercial-or-not; rotation tie-ins), and the next-step checklists (daily hadith is fully unblocked; tafsir is parked on the tafsir decision).
