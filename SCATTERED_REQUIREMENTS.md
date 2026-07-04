@@ -193,10 +193,18 @@ visual intent — not our own screens):
     only `{ kind: 'quran' | 'adhkar' }` (`packages/shared/src/models/reminder.ts`)
     — this needs a **new `{ kind: 'tafsir', … }` action variant** and a tafsir
     text source. Aladhan/AlQuran Cloud provide translations, not as-Sa'di tafsir.
-  - **Open question (user-flagged, TBD):** the **tafsir source/license is
-    undetermined.** Tafsir as-Sa'di redistribution must be license-checked (cf.
-    the §5B.3 / FR-EX25 licensing discipline for adhkar). Resolve source before
-    building.
+  - **License — RESOLVED (see `TAFSIR_SOURCING.md`, 2026-07-04):** the source
+    question is answered. **Arabic original is public domain** (as-Sa'di d. 1957;
+    Saudi life+50 → PD since 2008) and shippable on PD grounds. **English is
+    blocked** — every English edition (IIPH, Darussalam) is all-rights-reserved
+    and no openly-licensed English translation exists; kalamullah.com hosts the
+    IIPH edition without a license grant and is NOT usable. Product decision:
+    ship **Arabic-only** Saadi now, or **defer** the English tafsir pending a
+    license (contact IIPH for a non-commercial app license, or commission a
+    CC-BY translation of the PD Arabic — both detailed in `TAFSIR_SOURCING.md`).
+    Content is the blocker, not the code; the `{ kind: 'tafsir' }` action +
+    date-seeded rotation reuse the daily-hadith `pickDaily` primitive
+    (see `HADITH_INVENTORY.md`).
 
 - **FR-EX35: Default morning / evening / night adhkar reminders** — three seeded
   reminders that, when tapped, open the corresponding scaffolded adhkar list; each
@@ -288,8 +296,8 @@ post-Maghrib sunnah (kept per user). Entries already in
 | Surah al-Kahf (Friday, morning) | **exists** | `builtin-friday-kahf` (FR-EX6) | `weekly [Fri]` 06:00; action → Quran 18 |
 | Surah al-Kahf (Friday, pre-Maghrib) | net-new | FR-EX36 | Friday + `Maghrib −120` (model gap) |
 | Memorize one ayah/day | net-new | FR-EX33 | `daily` (tie-to-last-read TBD) |
-| One tafsir ayah/day (as-Sa'di) | net-new | FR-EX34 | `daily` (new action type; source TBD) |
-| Learn one hadith/day | net-new | FR-EX37 | `daily` (new action type; source TBD) |
+| One tafsir ayah/day (as-Sa'di) | net-new | FR-EX34 | `daily` (new action type; source RESOLVED — Arabic PD ship-able / English blocked, see `TAFSIR_SOURCING.md`) |
+| Learn one hadith/day | net-new | FR-EX37 | `daily` (new action type; source RESOLVED — sunnah.com CC-BY, see `HADITH_INVENTORY.md`) |
 | Fast on Thursdays | net-new | FR-EX38 | `weekly [Wed]` 20:00 (evening-before nudge) |
 | Cut nails on Friday | net-new | FR-EX39 | `weekly [Fri]` 06:00 (with Friday-morning items) |
 | Jummah: dress well & perfume | net-new | FR-EX40 | `weekly [Fri]` 12:00 (editable) |
@@ -315,10 +323,10 @@ their catalog default shifts from the current **21:30 → 21:00** in
 | EX31 Deletable defaults | `BUILT_IN_REMINDERS` + merge | **supersede built-in soft-delete** → hard-dismiss that sticks |
 | EX32 Quran 30-min reminder | `action:{kind:'quran'}`; auto `ReadingPosition` + manual `Bookmark[]` | seed the reminder; resolve action to manual-else-last-read |
 | EX33 Memorize one ayah/day | `daily` schedule; `action:{kind:'quran'}` | seed entry; optional tie to `ReadingPosition` (TBD) |
-| EX34 Tafsir ayah/day (as-Sa'di) | — | **new `action:{kind:'tafsir'}` type + tafsir source** (license TBD) |
+| EX34 Tafsir ayah/day (as-Sa'di) | daily-hadith `pickDaily` rotation primitive | **new `action:{kind:'tafsir'}` type + tafsir content**; license RESOLVED (`TAFSIR_SOURCING.md`): Arabic PD ship-able, English blocked |
 | EX35 Morning/evening/night adhkar | `action:{kind:'adhkar'}`; scaffolded `ADHKAR_ROUTINES` | seed 3 entries; prayer-anchored timing (needs EX28) |
 | EX36 Kahf 2nd Friday push | `builtin-friday-kahf`; `prayerAnchor` | **schedule can't do weekday + anchor** — extend model or 2nd entry (needs EX28) |
-| EX37 Learn one hadith/day | bundled sunnah.com hadith-derived adhkar (CC-BY 3.0) as precedent | **new content action type + curated hadith source** (license TBD) |
+| EX37 Learn one hadith/day | bundled sunnah.com hadith-derived adhkar (CC-BY 3.0) as precedent | **new content action type + curated hadith source**; scoped in `HADITH_INVENTORY.md` (Nawawi 40, sunnah.com CC-BY — license clear, 42-entry curation pending) |
 | EX38 Fast on Thursdays | `weekly [Wed]` schedule | seed entry (evening-before nudge; no action) |
 | EX39 Cut nails on Friday | `weekly [Fri]` schedule | seed entry (no action) |
 | EX40 Jummah dress & perfume | `weekly [Fri]` schedule | seed entry (editable noon; no action) |
@@ -327,6 +335,9 @@ their catalog default shifts from the current **21:30 → 21:00** in
 new tab; (2) FR-EX27 home/Masjid mutually-exclusive vs both-checkable; (3)
 FR-EX31 exact delete semantics for built-ins (hard-dismiss persistence);
 (4) FR-EX33 tie memorize-ayah to last-read position or not; (5) FR-EX34 Tafsir
-as-Sa'di source & license; (6) FR-EX36 how to model "Friday + prayer-anchor"
-(extend `prayerAnchor` with weekdays, or a Friday-only second entry); (7) FR-EX37
-hadith source, collection scope & license.
+as-Sa'di — license RESOLVED (`TAFSIR_SOURCING.md`); remaining product call is
+**Arabic-only (ship now) vs. wait for a licensed English edition**; (6) FR-EX36
+how to model "Friday + prayer-anchor" (extend `prayerAnchor` with weekdays, or a
+Friday-only second entry); (7) FR-EX37 hadith source & license RESOLVED
+(`HADITH_INVENTORY.md`, Nawawi 40 via sunnah.com CC-BY); remaining work is the
+42-entry curation pass.

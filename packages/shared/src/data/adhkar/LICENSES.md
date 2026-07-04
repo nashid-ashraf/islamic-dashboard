@@ -8,7 +8,7 @@ Every piece of text bundled in this directory — Arabic, transliteration, and e
 |------|-----------------|
 | Quran Arabic (Uthmani) | Universally public domain. |
 | **Sahih International** English translation | Released for free dissemination by the translators; widely redistributed in open-source Muslim software. Permissive. |
-| **Mustafa Khattab — The Clear Quran** | Licensed by The Book Foundation for free personal and non-commercial distribution with attribution. This open-source project qualifies. If this project ever becomes commercial (paid app, revenue-generating), the Khattab edition must be re-evaluated under commercial license terms. Not before. |
+| **Mustafa Khattab — The Clear Quran** | **CC BY-NC-ND 4.0**, © **Al-Furqaan Foundation** (verified 2026-07-04 — supersedes an earlier note that mis-credited "The Book Foundation" and omitted NoDerivatives). Free non-commercial distribution with attribution, **verbatim only (no modifications/derivatives)**. This open-source project qualifies. Commercial use requires a separate license from Al-Furqaan Foundation. Full detail + contact in the repo-root `LICENSES.md`. |
 | **Bengali — Muhiuddin Khan** (Quran translation) | Public domain / freely redistributable in Bangladesh; long-standing open use across Muslim open-source software. (Note: Muhiuddin Khan's **Hisnul Muslim** translation is separately Darussalam-licensed and is NOT used here — only his Quran translation, sourced via AlQuran.cloud.) |
 | Hadith Arabic text | Universally public domain (transmitted since the 7th century, recorded in the 9th). |
 | sunnah.com English | CC-BY 3.0 (by USC-MSA Center); must credit source URL per entry. |
