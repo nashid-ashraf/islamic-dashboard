@@ -43,3 +43,6 @@ yarn-error.log*
 
 # Test coverage
 coverage/
+
+# Prototype tooling (generated screenshots)
+prototypes/tools/shots/
