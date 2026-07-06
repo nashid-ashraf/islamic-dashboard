@@ -44,5 +44,13 @@ yarn-error.log*
 # Test coverage
 coverage/
 
-# Prototype tooling (generated screenshots)
-prototypes/tools/shots/
+# Design files (symlinked from private islamic-dashboard-design repo)
+design-briefs
+hi-fi-designs
+prototypes
+WIREFRAMES.md
+WIREFRAMES_TODO.md
+HOWTO_DESIGN_PIPELINE.md
+islamic_dashboard.html
+claude-memory/hifi-design-pipeline.md
+claude-memory/wireframes-visual-spec.md
